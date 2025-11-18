@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --------------------------------------------------
+   Fonts (opsional)
+-------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap');
+
+/* --------------------------------------------------
+   Base Layer
+-------------------------------------------------- */
+@layer base {
+  :root {
+    /* untuk efek underline brush di hero */
+    --brush-url: url("../assets/images/hero/brush.png");
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-pageRadial font-[Montserrat] text-text;
+  }
+}
+
+/* --------------------------------------------------
+   Utility: underline brush (hero heading)
+-------------------------------------------------- */
+.underline-brush {
+  position: relative;
+  z-index: 0;
+}
+.underline-brush::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0.20em;
+  background: var(--brush-url) no-repeat center;
+  background-size: 100% 100%;
+  z-index: -1;
+}
+
+/* --------------------------------------------------
+   Utility: sembunyikan scrollbar horizontal
+   (buat section rekomendasi / scroller)
+-------------------------------------------------- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* --------------------------------------------------
+   Utility: shadow lembut seragam antar komponen
+-------------------------------------------------- */
+.shadow-soft {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------
+   Text & warna tambahan global
+-------------------------------------------------- */
+.text-muted {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.text-brand2 {
+  color: #6F96D1;
+}
+
+/* --------------------------------------------------
+   Responsive tweaks kecil (optional)
+-------------------------------------------------- */
+@media (min-width: 768px) {
+  .section-spacing {
+    margin-top: 6rem;
+    margin-bottom: 6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-spacing-lg {
+    margin-top: 8rem;
+    margin-bottom: 8rem;
+  }
+}
