@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
-import CafeRecommendation from "./pages/CafeRecommendation";
+import CafeRecommendation from "./pages/CafePage";
 import TransBanyumas from "./pages/TransBanyumas";
 import { ChatProvider } from "./context/ChatContext";
 import ChatButton from "./components/chat/ChatButton";

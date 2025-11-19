@@ -90,3 +90,11 @@
     margin-bottom: 8rem;
   }
 }
+/* hide horizontal scrollbar untuk list cafe */
+.hide-scrollbar {
+  scrollbar-width: none;            /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;                    /* Chrome, Edge, Safari */
+}

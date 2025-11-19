@@ -3,11 +3,10 @@ import Hero from "../components/Home/Hero";
 import ServiceIntro from "../components/Home/ServiceIntro";
 import StatGrid from "../components/Home/StatGrid";
 import NewsList from "../components/Home/NewsList";
-import RecommendationList from "../components/Home/RecommendationList";
 import TransIntro from "../components/Home/TransIntro";
 import CorridorGrid from "../components/trans/CorridorGrid";
 import TransImportantInfo from "../components/trans/TransImportantInfo";
-import CafeRecommendation from "../pages/CafeRecommendation";
+import CafeSection from "../components/Home/CafeSection";
 
 export default function Home() {
   return (
@@ -31,7 +30,7 @@ export default function Home() {
 
         {/* REKOMENDASI (Explore Better With Recommendation) */}
         <section id="recommendations">
-          <CafeRecommendation />
+          <CafeSection />
         </section>
 
         {/* BERITA */}

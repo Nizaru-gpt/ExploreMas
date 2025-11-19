@@ -1,14 +1,16 @@
-import React, { useState } from "react";
-
-// === IMPORT FOTO MANUAL DARI HERO ===
 import calfImg from "../assets/images/hero/calf.jpg";
 import coldbrewImg from "../assets/images/hero/coldbrew.jpg";
 import advoImg from "../assets/images/hero/advo.jpg";
 
-// === TYPE DATA ===
-type Facility = "wifi" | "socket" | "ac" | "24h" | "parking";
+export type Facility =
+  | "wifi"
+  | "socket"
+  | "ac"
+  | "24h"
+  | "parking"
+  | "studyFriendly";
 
-interface Cafe {
+export interface Cafe {
   name: string;
   description: string;
   imageUrl: string;
@@ -18,8 +20,8 @@ interface Cafe {
   facilities: Facility[];
 }
 
-// === DATA 20 CAFE ===
-const cafes: Cafe[] = [
+
+export const cafes: Cafe[] = [
   {
     name: "Kopi Calf",
     description:
@@ -222,130 +224,3 @@ const cafes: Cafe[] = [
     facilities: ["wifi", "parking"],
   },
 ];
-
-// === LABEL & ICON ===
-const facilityLabel: Record<Facility, string> = {
-  wifi: "Wifi Gratis",
-  socket: "Colokan",
-  ac: "AC",
-  "24h": "24 Jam",
-  parking: "Parkir",
-};
-
-const facilityIcon: Record<Facility, string> = {
-  wifi: "📶",
-  socket: "🔌",
-  ac: "❄️",
-  "24h": "🕒",
-  parking: "🅿️",
-};
-
-const allFacilityFilters: Facility[] = ["wifi", "24h", "socket", "ac", "parking"];
-
-const CafeRecommendation: React.FC = () => {
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<Facility | null>(null);
-
-  const filteredCafes = cafes.filter((cafe) => {
-    const matchSearch =
-      cafe.name.toLowerCase().includes(search.toLowerCase()) ||
-      cafe.description.toLowerCase().includes(search.toLowerCase());
-
-    const matchFilter =
-      !activeFilter || cafe.facilities.includes(activeFilter);
-
-    return matchSearch && matchFilter;
-  });
-
-  return (
-    <div className="flex justify-center px-4 py-10 md:py-16">
-      <div className="w-full max-w-6xl">
-        {/* HEADER */}
-        <h1 className="font-playfair text-3xl md:text-4xl font-bold text-[#001845]">
-          Cafe Recommendation
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Discover the finest coffee spots in Purwokerto
-        </p>
-
-        {/* SEARCH */}
-        <div className="mt-6 w-full rounded-full border border-slate-300 bg-white px-6 py-3 flex items-center gap-3 shadow-sm">
-          <span className="text-lg">🔍</span>
-          <input
-            type="text"
-            placeholder="Cari cafe favorit kamu..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-sm md:text-base text-slate-700 placeholder:text-slate-400"
-          />
-        </div>
-
-        {/* FILTER */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {allFacilityFilters.map((f) => (
-            <button
-              key={f}
-              onClick={() =>
-                setActiveFilter(activeFilter === f ? null : f)
-              }
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs md:text-sm border transition-colors ${
-                activeFilter === f
-                  ? "bg-[#001845] text-white border-[#001845]"
-                  : "bg-white text-slate-700 border-slate-300 hover:border-[#001845]"
-              }`}
-            >
-              {facilityIcon[f]} {facilityLabel[f]}
-            </button>
-          ))}
-        </div>
-
-        {/* LIST: 1 → 2 → 4 kolom */}
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredCafes.map((cafe) => (
-            <div
-              key={cafe.name}
-              className="bg-white rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.16)] overflow-hidden"
-            >
-              <img src={cafe.imageUrl} className="w-full h-64 object-cover" />
-
-              <div className="px-6 pt-5 pb-6">
-                <h2 className="font-playfair text-lg md:text-xl font-semibold text-[#001845]">
-                  {cafe.name}
-                </h2>
-
-                <p className="mt-2 text-sm text-slate-600 line-clamp-3">
-                  {cafe.description}
-                </p>
-
-                <div className="mt-4 border-t border-slate-200 pt-3 space-y-2 text-xs md:text-sm text-slate-600">
-                  <p>📍 {cafe.address}</p>
-                  <p>🕒 {cafe.detailInfo}</p>
-                  <p>💸 {cafe.priceRange}</p>
-                </div>
-
-                <div className="mt-4 flex gap-2 border-t border-slate-200 pt-3">
-                  {cafe.facilities.map((f) => (
-                    <div
-                      key={f}
-                      className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center"
-                    >
-                      {facilityIcon[f]}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredCafes.length === 0 && (
-            <p className="col-span-full text-center text-slate-500 mt-6">
-              Cafe tidak ditemukan. Coba kata kunci atau filter lain.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default CafeRecommendation;

@@ -1,4 +1,4 @@
-import { topPlaces } from "../../data/places";
+import { topPlaces } from "../../data/wisata";
 
 function RankBadge({ i }: { i: number }) {
   return (

@@ -1,6 +1,4 @@
 export type Category =
-  | "Cafe & Kuliner"
-  | "Co-working"
   | "Taman"
   | "Wisata Alam"
   | "Wisata Pendidikan";
@@ -30,55 +28,6 @@ export type Place = {
 };
 
 export const places: Place[] = [
-  {
-    id: "p01",
-    slug: "kedai-sore-cafe",
-    name: "Kedai Sore Cafe",
-    category: "Cafe & Kuliner",
-    address: "Jl. Prof. Dr. HR. Boenyamin No. 90, Purwokerto Utara",
-    district: "Purwokerto Utara",
-    coords: { lat: -7.4155, lng: 109.2407 },
-    openHours: "08.00 – 22.00 WIB",
-    priceRange: "Rp 15.000 – Rp 45.000",
-    priceLevel: "Low",
-    rating: 4.9,
-    reviews: 142,
-    tags: ["WiFi", "Cozy", "Smoking Area", "Colokan"],
-    image: "/src/assets/images/hangout/kedai-sore.jpg",
-    gallery: ["/src/assets/images/hangout/kedai-sore.jpg"],
-  },
-  {
-    id: "p02",
-    slug: "kopi-nalar-purwokerto",
-    name: "Kopi Nalar Purwokerto",
-    category: "Cafe & Kuliner",
-    address: "Jl. Jend. Sudirman No. 12, Purwokerto Timur",
-    district: "Purwokerto Timur",
-    coords: { lat: -7.4278, lng: 109.2525 },
-    openHours: "08.00 – 22.00 WIB",
-    priceRange: "Rp 18.000 – Rp 55.000",
-    priceLevel: "Medium",
-    rating: 4.8,
-    reviews: 238,
-    tags: ["WiFi", "Instagramable", "Outdoor"],
-    image: "/src/assets/images/hangout/kopi-nalar.jpg",
-  },
-  {
-    id: "p03",
-    slug: "cohub-space",
-    name: "CoHub Space",
-    category: "Co-working",
-    address: "Jl. Kampus Unsoed, Grendeng",
-    district: "Purwokerto Utara",
-    coords: { lat: -7.413, lng: 109.229 },
-    openHours: "09.00 – 21.00 WIB",
-    priceRange: "Mulai Rp 20.000/jam",
-    priceLevel: "Medium",
-    rating: 4.7,
-    reviews: 88,
-    tags: ["WiFi Cepat", "Meeting Room", "Printer"],
-    image: "/src/assets/images/hangout/kedai-sore.jpg",
-  },
   {
     id: "p04",
     slug: "alun-alun-purwokerto",
@@ -157,7 +106,7 @@ export const places: Place[] = [
 ];
 
 export const topPlaces: Place[] = [
-  places.find(p => p.id === "p01")!,
-  places.find(p => p.id === "p02")!,
-  places.find(p => p.id === "p03")!,
+  places.find((p) => p.id === "p05")!,
+  places.find((p) => p.id === "p06")!,
+  places.find((p) => p.id === "p07")!,
 ];
