@@ -1,5 +1,6 @@
 import React, { useState, useRef, MouseEvent } from "react";
 import { cafes, Facility } from "../data/cafes";
+import { Link } from "react-router-dom";
 
 // React Icons
 import { FiWifi } from "react-icons/fi";
@@ -35,6 +36,13 @@ const allFacilityFilters: Facility[] = [
   "parking",
   "studyFriendly",
 ];
+
+// buat slug dari nama cafe, misal "Calf Coffee Industry" -> "calf-coffee-industry"
+const slugify = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
 const CafePage: React.FC = () => {
   const [search, setSearch] = useState("");
@@ -137,45 +145,56 @@ const CafePage: React.FC = () => {
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
         >
-          {filteredCafes.map((cafe) => (
-            <article
-              key={cafe.name}
-              className="bg-white rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.16)] overflow-hidden flex flex-col h-full"
-            >
-              <img src={cafe.imageUrl} className="w-full h-64 object-cover" />
+          {filteredCafes.map((cafe) => {
+            const slug = slugify(cafe.name);
 
-              <div className="px-6 pt-5 pb-6 flex flex-1 flex-col">
-                {/* JUDUL */}
-                <h2 className="font-playfair text-lg md:text-xl font-semibold text-[#001845]">
-                  {cafe.name}
-                </h2>
+            return (
+              <Link
+                key={cafe.name}
+                to={`/cafes/${slug}`}
+                className="block rounded-[32px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#001845]"
+              >
+                <article className="bg-white rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.16)] overflow-hidden flex flex-col h-full">
+                  <img
+                    src={cafe.imageUrl}
+                    className="w-full h-64 object-cover"
+                    alt={cafe.name}
+                  />
 
-                {/* DESKRIPSI */}
-                <p className="mt-2 text-sm text-slate-600 line-clamp-3">
-                  {cafe.description}
-                </p>
+                  <div className="px-6 pt-5 pb-6 flex flex-1 flex-col">
+                    {/* JUDUL */}
+                    <h2 className="font-playfair text-lg md:text-xl font-semibold text-[#001845]">
+                      {cafe.name}
+                    </h2>
 
-                {/* INFO DETAIL */}
-                <div className="mt-4 border-t border-slate-200 pt-3 space-y-2 text-xs md:text-sm text-slate-600">
-                  <p>📍 {cafe.address}</p>
-                  <p>🕒 {cafe.detailInfo}</p>
-                  <p>💸 {cafe.priceRange}</p>
-                </div>
+                    {/* DESKRIPSI */}
+                    <p className="mt-2 text-sm text-slate-600 line-clamp-3">
+                      {cafe.description}
+                    </p>
 
-                {/* FASILITAS – selalu di paling bawah, sejajar antar card */}
-                <div className="mt-4 flex gap-2 border-t border-slate-200 pt-3 mt-auto">
-                  {cafe.facilities.map((f) => (
-                    <div
-                      key={f}
-                      className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700"
-                    >
-                      {facilityIcon[f]}
+                    {/* INFO DETAIL */}
+                    <div className="mt-4 border-t border-slate-200 pt-3 space-y-2 text-xs md:text-sm text-slate-600">
+                      <p>📍 {cafe.address}</p>
+                      <p>🕒 {cafe.detailInfo}</p>
+                      <p>💸 {cafe.priceRange}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </article>
-          ))}
+
+                    {/* FASILITAS – selalu di paling bawah, sejajar antar card */}
+                    <div className="mt-4 flex gap-2 border-t border-slate-200 pt-3 mt-auto">
+                      {cafe.facilities.map((f) => (
+                        <div
+                          key={f}
+                          className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700"
+                        >
+                          {facilityIcon[f]}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              </Link>
+            );
+          })}
 
           {filteredCafes.length === 0 && (
             <p className="text-center text-slate-500 mt-6">
