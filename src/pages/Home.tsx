@@ -4,29 +4,47 @@ import ServiceIntro from "../components/Home/ServiceIntro";
 import StatGrid from "../components/Home/StatGrid";
 import NewsList from "../components/Home/NewsList";
 import RecommendationList from "../components/Home/RecommendationList";
+import TransIntro from "../components/Home/TransIntro";
+import CorridorGrid from "../components/trans/CorridorGrid";
+import TransImportantInfo from "../components/trans/TransImportantInfo";
+import CafeRecommendation from "../pages/CafeRecommendation";
 
 export default function Home() {
   return (
     <div className="bg-[#F8FBFF] min-h-screen">
       <Navbar />
-      <main className="pt-20 pb-24">
-        <Hero />
 
-        <div className="mt-20">
+      {/* padding top buat geser isi supaya tidak ketutup navbar */}
+      <main className="pt-20 pb-24 space-y-24 md:space-y-32">
+        {/* HERO */}
+        <section id="home">
+          <Hero />
+        </section>
+
+        {/* OUR SERVICE + STATISTIC (bagian tengah panel biru + icon2) */}
+        <section id="services" className="mt-10">
           <ServiceIntro />
-        </div>
+          <div className="mt-12">
+            <StatGrid />
+          </div>
+        </section>
 
-        <div className="mt-24">
-          <StatGrid />
-        </div>
+        {/* REKOMENDASI (Explore Better With Recommendation) */}
+        <section id="recommendations">
+          <CafeRecommendation />
+        </section>
 
-        <div className="mt-40 md:mt-48">
+        {/* BERITA */}
+        <section id="news">
           <NewsList />
-        </div>
+        </section>
 
-        <div className="mt-24">
-          <RecommendationList />
-        </div>
+        {/* TRANS BANYUMAS (digabung dari page TransBanyumas) */}
+        <section id="trans">
+          <TransIntro />
+          <CorridorGrid />
+          <TransImportantInfo />
+        </section>
       </main>
     </div>
   );

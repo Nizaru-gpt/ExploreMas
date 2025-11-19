@@ -1,18 +1,24 @@
 import { Routes, Route } from "react-router-dom";
-import Footer from "./components/layout/Footer";
 import Home from "./pages/Home";
+import CafeRecommendation from "./pages/CafeRecommendation";
 import TransBanyumas from "./pages/TransBanyumas";
+import { ChatProvider } from "./context/ChatContext";
+import ChatButton from "./components/chat/ChatButton";
+import ChatPopup from "./components/chat/ChatPopup";
 
-export default function App() {
+function App() {
   return (
-    <div className="bg-[#F8FBFF] min-h-screen flex flex-col">
-      <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/trans" element={<TransBanyumas />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+    <ChatProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/cafes" element={<CafeRecommendation />} />
+        <Route path="/trans" element={<TransBanyumas />} />
+      </Routes>
+
+      <ChatButton />
+      <ChatPopup />
+    </ChatProvider>
   );
 }
+
+export default App;
