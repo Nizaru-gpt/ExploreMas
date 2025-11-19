@@ -7,6 +7,7 @@ import TransIntro from "../components/Home/TransIntro";
 import CorridorGrid from "../components/trans/CorridorGrid";
 import TransImportantInfo from "../components/trans/TransImportantInfo";
 import CafeSection from "../components/Home/CafeSection";
+import WisataSection  from "./WisataPage";
 
 export default function Home() {
   return (
@@ -31,6 +32,7 @@ export default function Home() {
         {/* REKOMENDASI (Explore Better With Recommendation) */}
         <section id="recommendations">
           <CafeSection />
+          <WisataSection />
         </section>
 
         {/* BERITA */}

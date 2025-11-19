@@ -1,6 +1,6 @@
-import calfImg from "../assets/images/hero/calf.jpg";
-import advoImg from "../assets/images/hero/advo.jpg";
-import coldImg from "../assets/images/hero/coldbrew.jpg";
+import calfImg from "../assets/images/cafe/calf.jpg";
+import advoImg from "../assets/images/cafe/advo.jpg";
+import coldImg from "../assets/images/cafe/coldbrew.jpg";
 import defaultImg from "../assets/images/hero/tugu.png";
 
 export type CafeDetail = {

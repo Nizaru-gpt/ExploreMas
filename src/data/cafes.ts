@@ -1,6 +1,6 @@
-import calfImg from "../assets/images/hero/calf.jpg";
-import coldbrewImg from "../assets/images/hero/coldbrew.jpg";
-import advoImg from "../assets/images/hero/advo.jpg";
+import calfImg from "../assets/images/cafe/calf.jpg";
+import coldbrewImg from "../assets/images/cafe/coldbrew.jpg";
+import advoImg from "../assets/images/cafe/advo.jpg";
 
 export type Facility =
   | "wifi"

@@ -23,9 +23,7 @@ const quickQuestions = [
   "Cara kasih rating destinasi",
 ];
 
-// ======================
-// Helper jam realtime
-// ======================
+// helper jam
 function getCurrentTime() {
   const d = new Date();
   return d.toLocaleTimeString("id-ID", {
@@ -34,12 +32,8 @@ function getCurrentTime() {
   });
 }
 
-// ======================
-// Dummy bot sementara
-// Nanti bagian ini bisa kamu ganti panggil API Grok
-// ======================
+// dummy bot (nanti bisa diganti API Grok)
 async function callLocalBot(prompt: string): Promise<string> {
-  // Simulasi delay mikir 1 detik
   await new Promise((r) => setTimeout(r, 1000));
 
   if (/trans/i.test(prompt)) {
@@ -72,12 +66,10 @@ const ChatPopup: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto scroll ke bawah tiap ada pesan baru / typing
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Reset kalau popup ditutup
   useEffect(() => {
     if (!open) {
       setInput("");
@@ -87,7 +79,6 @@ const ChatPopup: React.FC = () => {
 
   if (!open) return null;
 
-  // ------------ kirim pesan -------------
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -130,15 +121,17 @@ const ChatPopup: React.FC = () => {
     <div
       className="
         fixed bottom-24 right-3 md:right-6
-        w-[90vw] max-w-md
-        bg-white rounded-2xl shadow-2xl border border-slate-200
+        w-[92vw] max-w-md
+        h-[480px] md:h-[520px]
+        bg-white rounded-[32px]
+        shadow-[0_20px_60px_rgba(15,23,42,0.25)]
+        border border-slate-200
         z-50
         flex flex-col
-        max-h-[70vh]
       "
     >
-      {/* HEADER (FIX) */}
-      <div className="bg-[#4C74B9] text-white px-4 py-3 flex items-center gap-3">
+      {/* HEADER */}
+      <div className="bg-[#4C74B9] text-white px-4 py-3 flex items-center gap-3 rounded-t-[32px]">
         <img
           src={botIcon}
           className="w-9 h-9 rounded-full bg-white/80 p-1"
@@ -155,8 +148,8 @@ const ChatPopup: React.FC = () => {
         </button>
       </div>
 
-      {/* BODY (SCROLL ONLY THIS PART) */}
-      <div className="flex-1 p-4 space-y-3 bg-slate-50/60 overflow-y-auto">
+      {/* BODY (SCROLL) */}
+      <div className="flex-1 p-4 space-y-3 bg-slate-50/70 overflow-y-auto">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -165,10 +158,10 @@ const ChatPopup: React.FC = () => {
             }`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+              className={`max-w-[80%] rounded-3xl px-4 py-2.5 text-sm shadow-sm ${
                 msg.sender === "user"
-                  ? "bg-[#4C74B9] text-white rounded-br-sm"
-                  : "bg-white text-slate-800 rounded-bl-sm"
+                  ? "bg-[#4C74B9] text-white rounded-br-xl"
+                  : "bg-white text-slate-800 rounded-bl-xl"
               }`}
             >
               <p>{msg.text}</p>
@@ -185,7 +178,6 @@ const ChatPopup: React.FC = () => {
           </div>
         ))}
 
-        {/* Typing indicator */}
         {isTyping && (
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-[#4C74B9]/10 flex items-center justify-center">
@@ -200,9 +192,9 @@ const ChatPopup: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* FOOTER (FIX DI BAWAH) */}
-      <div className="px-3 py-2 border-t border-slate-200 bg-white">
-        {/* QUICK QUESTIONS */}
+      {/* FOOTER */}
+      <div className="px-3 py-2 border-t border-slate-200 bg-white rounded-b-[32px]">
+        {/* Quick questions */}
         <div className="flex flex-wrap gap-2 mb-2">
           {quickQuestions.map((text) => (
             <button
@@ -215,7 +207,7 @@ const ChatPopup: React.FC = () => {
           ))}
         </div>
 
-        {/* INPUT */}
+        {/* Input */}
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -223,7 +215,7 @@ const ChatPopup: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#4C74B9]"
+            className="flex-1 px-3 py-2 border border-slate-300 rounded-full text-sm outline-none focus:ring-1 focus:ring-[#4C74B9]"
           />
           <button
             onClick={() => sendMessage(input)}
