@@ -21,8 +21,8 @@ const CafeDetail: React.FC = () => {
 
   if (!cafe) {
     return (
-      <main className="min-h-screen bg-slate-100 px-4 py-8 md:px-8">
-        <div className="mx-auto max-w-6xl lg:max-w-7xl">
+      <main className="min-h-screen bg-slate-100 px-4 py-8">
+        <div className="mx-auto w-full max-w-5xl lg:max-w-6xl">
           <button
             onClick={() => navigate(-1)}
             className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-slate-50"
@@ -50,8 +50,8 @@ const CafeDetail: React.FC = () => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-6 md:px-8 md:py-8">
-      <div className="mx-auto max-w-6xl lg:max-w-7xl">
+    <main className="min-h-screen bg-slate-100 px-4 py-6 md:py-8 lg:py-10">
+      <div className="mx-auto w-full max-w-5xl lg:max-w-6xl">
         {/* Tombol kembali */}
         <button
           onClick={() => navigate(-1)}
@@ -61,11 +61,11 @@ const CafeDetail: React.FC = () => {
           <span>Kembali</span>
         </button>
 
-        <div className="grid gap-4 md:gap-6 lg:gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid gap-5 md:gap-6 lg:gap-8 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           {/* LEFT – info utama */}
           <section className="overflow-hidden rounded-3xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
             {/* Hero image */}
-            <div className="h-[260px] md:h-[320px] lg:h-[360px] overflow-hidden">
+            <div className="h-[220px] md:h-[260px] lg:h-[280px] overflow-hidden">
               <img
                 src={cafe.image}
                 alt={cafe.name}
@@ -76,7 +76,7 @@ const CafeDetail: React.FC = () => {
             <div className="space-y-4 px-5 pb-6 pt-4 md:px-7 md:pb-7 md:pt-5">
               {/* Tentang tempat */}
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
+                <h2 className="text-[18px] font-semibold text-slate-900 md:text-[20px]">
                   Tentang Tempat Ini
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-slate-600 md:text-[15px]">
@@ -87,7 +87,7 @@ const CafeDetail: React.FC = () => {
               <hr className="border-slate-200" />
 
               {/* Alamat, jam buka, harga */}
-              <div className="space-y-3 text-sm text-slate-700">
+              <div className="space-y-3 text-[13px] text-slate-700 md:text-sm">
                 <div className="flex gap-3">
                   <FiMapPin className="mt-0.5 shrink-0 text-slate-500" />
                   <p>{cafe.address}</p>
@@ -166,7 +166,7 @@ const CafeDetail: React.FC = () => {
           <div className="flex flex-col gap-4 md:gap-5">
             {/* Fasilitas unggulan */}
             <section className="rounded-3xl bg-white px-5 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.12)] md:px-6 md:py-5">
-              <h3 className="mb-4 text-lg font-semibold text-slate-900">
+              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">
                 Fasilitas Unggulan
               </h3>
               <div className="grid grid-cols-2 gap-3">
@@ -186,7 +186,7 @@ const CafeDetail: React.FC = () => {
 
             {/* Akses Trans Banyumas */}
             <section className="rounded-3xl bg-white px-5 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.12)] md:px-6 md:py-5">
-              <h3 className="mb-4 text-lg font-semibold text-slate-900">
+              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">
                 Akses Trans Banyumas
               </h3>
 

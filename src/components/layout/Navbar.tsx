@@ -1,35 +1,41 @@
 import { ChevronDown } from "lucide-react";
 
 const linkBase =
-  "relative pb-1 text-sm md:text-base text-black whitespace-nowrap " +
+  "relative pb-1 text-sm md:text-base whitespace-nowrap " +
   "after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-[2px] " +
-  "after:w-0 after:bg-black after:transition-[width] after:duration-300 hover:after:w-full";
+  "after:w-0 after:bg-current after:transition-[width] after:duration-300 hover:after:w-full";
 
-const navItems = [
+type NavItem = {
+  id: "home" | "recommendations" | "trans" | "trip-planner";
+  label: string;
+};
+
+const navItems: NavItem[] = [
   { id: "home", label: "Home" },
-  { id: "services", label: "Layanan" },
   { id: "recommendations", label: "Rekomendasi" },
-  { id: "news", label: "Berita" },
   { id: "trans", label: "Trans Banyumas" },
+  { id: "trip-planner", label: "Trip Planner" },
 ];
 
 function scrollToSection(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  // offset dikurangi tinggi navbar (±80px) biar pas
-  const y = el.getBoundingClientRect().top + window.scrollY - 80;
+  const y = el.getBoundingClientRect().top + window.scrollY - 80; // offset navbar
   window.scrollTo({ top: y, behavior: "smooth" });
 }
 
 export default function Navbar() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#F8FBFF]/80 backdrop-blur border-b border-border font-[Montserrat]">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-sm font-[Montserrat]">
       <div className="w-[min(1120px,92%)] mx-auto h-20 flex items-center justify-between px-6">
         {/* LOGO / NAMA WEBSITE */}
-        <div className="font-playfair text-xl md:text-2xl font-extrabold text-[#001845]">
+        <button
+          onClick={() => scrollToSection("home")}
+          className="font-playfair text-xl md:text-2xl font-extrabold text-[#001845]"
+        >
           ExploreMas
-        </div>
+        </button>
 
         {/* NAV LINKS (desktop) */}
         <nav className="hidden md:flex items-center gap-6 text-black font-medium whitespace-nowrap">
@@ -37,13 +43,13 @@ export default function Navbar() {
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
-              className={linkBase}
+              className={linkBase + " text-black"}
             >
               {item.label}
             </button>
           ))}
 
-          {/* Login & bahasa (optional, biar mirip desain) */}
+          {/* Login & bahasa (optional) */}
           <div className="ml-6 flex items-center gap-3 text-sm">
             <button className="text-black hover:opacity-70 transition">
               Login
@@ -57,10 +63,8 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {/* versi mobile: simple button (bisa kamu upgrade nanti) */}
-        <div className="md:hidden text-sm text-black">
-          Menu
-        </div>
+        {/* versi mobile: simple button */}
+        <div className="md:hidden text-sm text-black">Menu</div>
       </div>
     </header>
   );

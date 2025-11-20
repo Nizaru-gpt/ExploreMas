@@ -1,12 +1,20 @@
+// src/App.tsx
 import { Routes, Route } from "react-router-dom";
+
 import Home from "./pages/Home";
+
+// CAFE
 import CafePage from "./pages/CafePage";
 import CafeDetail from "./pages/CafeDetail";
+
+// TRANS BANYUMAS
 import TransBanyumas from "./pages/TransBanyumas";
 
+// WISATA
 import WisataPage from "./pages/WisataPage";
 import WisataDetail from "./pages/WisataDetail";
 
+// GLOBAL CHAT
 import { ChatProvider } from "./context/ChatContext";
 import ChatButton from "./components/chat/ChatButton";
 import ChatPopup from "./components/chat/ChatPopup";
@@ -15,7 +23,7 @@ function App() {
   return (
     <ChatProvider>
       <Routes>
-        {/* HOME */}
+        {/* HOME (semua section termasuk Trip Planner ada di sini) */}
         <Route path="/" element={<Home />} />
 
         {/* CAFE */}
@@ -28,6 +36,8 @@ function App() {
 
         {/* TRANS BANYUMAS */}
         <Route path="/trans" element={<TransBanyumas />} />
+
+        {/* ❌ Tidak ada route /trip-planner, karena Trip Planner adalah section di Home */}
       </Routes>
 
       {/* GLOBAL CHAT BOT */}

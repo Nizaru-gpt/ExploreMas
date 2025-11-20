@@ -7,7 +7,8 @@ import TransIntro from "../components/Home/TransIntro";
 import CorridorGrid from "../components/trans/CorridorGrid";
 import TransImportantInfo from "../components/trans/TransImportantInfo";
 import CafeSection from "../components/Home/CafeSection";
-import WisataSection  from "./WisataPage";
+import WisataSection from "./WisataPage";
+import TripPlanner from "./TripPlanner";
 
 export default function Home() {
   return (
@@ -45,6 +46,11 @@ export default function Home() {
           <TransIntro />
           <CorridorGrid />
           <TransImportantInfo />
+        </section>
+
+        {/* TRIP PLANNER – diletakkan di bawah section lain */}
+        <section id="trip-planner">
+          <TripPlanner />
         </section>
       </main>
     </div>
