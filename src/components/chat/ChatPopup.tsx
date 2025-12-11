@@ -1,9 +1,5 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  KeyboardEvent,
-} from "react";
+// src/components/chat/ChatPopup.tsx
+import React, { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useChat } from "../../context/ChatContext";
 import botIcon from "../../assets/images/hero/chatbot.png";
 
@@ -23,7 +19,6 @@ const quickQuestions = [
   "Cara kasih rating destinasi",
 ];
 
-// helper jam
 function getCurrentTime() {
   const d = new Date();
   return d.toLocaleTimeString("id-ID", {
@@ -32,7 +27,7 @@ function getCurrentTime() {
   });
 }
 
-// dummy bot (nanti bisa diganti API Grok)
+// dummy bot fallback
 async function callLocalBot(prompt: string): Promise<string> {
   await new Promise((r) => setTimeout(r, 1000));
 
@@ -53,12 +48,19 @@ async function callLocalBot(prompt: string): Promise<string> {
 }
 
 const ChatPopup: React.FC = () => {
-  const { open, setOpen } = useChat();
+  const {
+    open,
+    setOpen,
+    getFaqAnswer,
+    registerUserMessage,
+    registerBotMessage,
+  } = useChat();
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       sender: "bot",
-      text: "Halo! 👋 Aku asisten virtual Purwokerto Fun. Ada yang bisa aku bantu?",
+      text: "Halo! 👋 Aku asisten virtual ExploreMas. Ada yang bisa aku bantu?",
       time: getCurrentTime(),
     },
   ]);
@@ -93,9 +95,22 @@ const ChatPopup: React.FC = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
+    registerUserMessage();
 
     try {
-      const botReplyText = await callLocalBot(trimmed);
+      // 1. cek dulu ke FAQ
+      const faqAnswer = getFaqAnswer(trimmed);
+      let botReplyText: string;
+      let fromFaq = false;
+
+      if (faqAnswer) {
+        botReplyText = faqAnswer;
+        fromFaq = true;
+      } else {
+        // 2. kalau tidak ada, pakai bot lokal
+        botReplyText = await callLocalBot(trimmed);
+        fromFaq = false;
+      }
 
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
@@ -105,6 +120,7 @@ const ChatPopup: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+      registerBotMessage(fromFaq);
     } finally {
       setIsTyping(false);
     }
@@ -148,7 +164,7 @@ const ChatPopup: React.FC = () => {
         </button>
       </div>
 
-      {/* BODY (SCROLL) */}
+      {/* BODY */}
       <div className="flex-1 p-4 space-y-3 bg-slate-50/70 overflow-y-auto">
         {messages.map((msg) => (
           <div
@@ -194,7 +210,6 @@ const ChatPopup: React.FC = () => {
 
       {/* FOOTER */}
       <div className="px-3 py-2 border-t border-slate-200 bg-white rounded-b-[32px]">
-        {/* Quick questions */}
         <div className="flex flex-wrap gap-2 mb-2">
           {quickQuestions.map((text) => (
             <button
@@ -207,7 +222,6 @@ const ChatPopup: React.FC = () => {
           ))}
         </div>
 
-        {/* Input */}
         <div className="flex items-center gap-2">
           <input
             type="text"

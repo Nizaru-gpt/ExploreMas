@@ -1,4 +1,5 @@
-import { useChat } from "../../context/ChatContext";
+// src/components/chat/ChatButton.tsx
+import { useChat } from "../../context/ChatContext"; // <- pastikan path ini
 import botIcon from "../../assets/images/hero/chatbot.png";
 
 const ChatButton: React.FC = () => {
