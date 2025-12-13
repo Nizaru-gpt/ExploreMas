@@ -3,22 +3,30 @@ import { Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 
+// CAFE
 import CafePage from "./pages/CafePage";
 import CafeDetail from "./pages/CafeDetail";
 
+// TRANS BANYUMAS
 import TransBanyumas from "./pages/TransBanyumas";
 
+// WISATA
 import WisataPage from "./pages/WisataPage";
 import WisataDetail from "./pages/WisataDetail";
 
+// CHAT
 import ChatButton from "./components/chat/ChatButton";
 import ChatPopup from "./components/chat/ChatPopup";
 
-// ✅ IMPORT ChatProvider DARI CONTEXT
+// CONTEXT CHAT
 import { ChatProvider } from "./context/ChatContext";
 
-// 🔥 Import Dashboard Admin
+// ADMIN
 import AdminDashboard from "./pages/AdminDashboard";
+
+// AUTH
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 function App() {
   return (
@@ -26,6 +34,10 @@ function App() {
       <Routes>
         {/* HOME */}
         <Route path="/" element={<Home />} />
+
+        {/* AUTH */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         {/* CAFE */}
         <Route path="/cafes" element={<CafePage />} />
@@ -40,6 +52,9 @@ function App() {
 
         {/* ADMIN DASHBOARD */}
         <Route path="/admin" element={<AdminDashboard />} />
+
+        {/* (OPSIONAL) FALLBACK 404 → Arahkan ke Home dulu */}
+        {/* <Route path="*" element={<Home />} /> */}
       </Routes>
 
       {/* GLOBAL CHAT BOT */}

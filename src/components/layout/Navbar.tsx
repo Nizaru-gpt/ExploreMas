@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const linkBase =
   "relative pb-1 text-sm md:text-base whitespace-nowrap " +
@@ -49,14 +50,22 @@ export default function Navbar() {
             </button>
           ))}
 
-          {/* Login & bahasa (optional) */}
+          {/* Login & bahasa */}
           <div className="ml-6 flex items-center gap-3 text-sm">
-            <button className="text-black hover:opacity-70 transition">
+            <Link
+              to="/login"
+              className="text-black hover:opacity-70 transition"
+            >
               Login
-            </button>
-            <button className="px-4 py-1.5 border border-black/70 rounded-full text-sm text-black font-medium hover:bg-black hover:text-white transition">
+            </Link>
+
+            <Link
+              to="/register"
+              className="px-4 py-1.5 border border-black/70 rounded-full text-sm text-black font-medium hover:bg-black hover:text-white transition"
+            >
               Sign up
-            </button>
+            </Link>
+
             <button className="flex items-center gap-1 text-black hover:opacity-70 transition">
               EN <ChevronDown className="w-4 h-4" />
             </button>
