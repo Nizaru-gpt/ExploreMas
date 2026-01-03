@@ -1,23 +1,62 @@
+// src/pages/RegisterPage.tsx
 import React, { useState, FormEvent } from "react";
 import registerMascot from "../assets/images/maskot/register.png";
+import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
+
+type RegisterResponse = any;
 
 const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [agree, setAgree] = useState(false);
-  const [showErrors, setShowErrors] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const [showErrors, setShowErrors] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!fullName || !email || !password || !confirm || !agree || password !== confirm) {
+    if (
+      !fullName ||
+      !email ||
+      !password ||
+      !confirm ||
+      !agree ||
+      password !== confirm
+    ) {
       setShowErrors(true);
       return;
     }
 
-    console.log("Register with:", { fullName, email, password });
+    setLoading(true);
+    setApiError(null);
+
+    try {
+      const payload = {
+        username: fullName,
+        email,
+        password,
+      };
+
+      // ✅ coba /register dulu, kalau gak ada baru /api/register
+      try {
+        await api.post<RegisterResponse>("/register", payload);
+      } catch {
+        await api.post<RegisterResponse>("/api/register", payload);
+      }
+
+      navigate("/login");
+    } catch (err: any) {
+      setApiError(String(err?.message || err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const nameError = showErrors && !fullName;
@@ -29,7 +68,6 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-[#f5f4ff]">
       <div className="w-[min(440px,94%)] bg-white shadow-[0_18px_45px_rgba(12,27,76,0.14)] rounded-3xl p-8 border border-[#E3E6F5]">
-
         {/* ===== MASKOT REGISTER ===== */}
         <div className="flex justify-center -mt-20 mb-2">
           <img
@@ -48,9 +86,17 @@ const RegisterPage: React.FC = () => {
             Buat akun baru
           </h1>
           <p className="text-xs mt-2 text-[#5E6282]">
-            Mulai merencanakan perjalanan dan nikmati ritme slow–living di Purwokerto.
+            Mulai merencanakan perjalanan dan nikmati ritme slow–living di
+            Purwokerto.
           </p>
         </div>
+
+        {/* ERROR BAR */}
+        {apiError && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {apiError}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,6 +118,7 @@ const RegisterPage: React.FC = () => {
               onChange={(e) => {
                 setFullName(e.target.value);
                 if (showErrors) setShowErrors(false);
+                if (apiError) setApiError(null);
               }}
             />
             {nameError && (
@@ -99,6 +146,7 @@ const RegisterPage: React.FC = () => {
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (showErrors) setShowErrors(false);
+                if (apiError) setApiError(null);
               }}
             />
             {emailError && (
@@ -126,6 +174,7 @@ const RegisterPage: React.FC = () => {
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (showErrors) setShowErrors(false);
+                if (apiError) setApiError(null);
               }}
             />
             {passwordError && (
@@ -153,6 +202,7 @@ const RegisterPage: React.FC = () => {
               onChange={(e) => {
                 setConfirm(e.target.value);
                 if (showErrors) setShowErrors(false);
+                if (apiError) setApiError(null);
               }}
             />
             {confirmError && (
@@ -171,6 +221,7 @@ const RegisterPage: React.FC = () => {
                 onChange={(e) => {
                   setAgree(e.target.checked);
                   if (showErrors) setShowErrors(false);
+                  if (apiError) setApiError(null);
                 }}
                 className="mt-[2px] rounded border-[#E3E6F5]"
               />
@@ -195,11 +246,12 @@ const RegisterPage: React.FC = () => {
             />
             <button
               type="submit"
+              disabled={loading}
               className="relative z-10 w-full rounded-2xl py-2.5 text-sm font-semibold
               bg-[#0f1f56] text-white shadow-[0_12px_28px_rgba(12,27,76,0.35)]
-              hover:opacity-95 active:scale-[0.99] transition"
+              hover:opacity-95 active:scale-[0.99] transition disabled:opacity-60"
             >
-              Buat akun
+              {loading ? "Memproses..." : "Buat akun"}
             </button>
           </div>
         </form>

@@ -1,23 +1,143 @@
-// src/pages/CafeDetail.tsx
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-  FiArrowLeft,
-  FiMapPin,
-  FiClock,
-  FiDollarSign,
-  FiWifi,
-  FiWind,
-  FiZap,
-  FiCamera,
-} from "react-icons/fi";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { FiArrowLeft, FiMapPin, FiClock, FiDollarSign, FiWifi, FiWind, FiZap, FiCamera } from "react-icons/fi";
 import { cafeDetails } from "../data/cafeDetails";
+import { api } from "../lib/api";
+
+// slugify sama seperti di CafePage
+const slugify = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+type ListingMode = "cafe" | "kuliner";
+
+type ApiItem = {
+  id: number;
+  nama_tempat: string;
+  kategori: string;
+  alamat: string;
+  jam_buka?: string | null;
+  jam_tutup?: string | null;
+  htm: number;
+  link_gmaps: string;
+  link_foto: string;
+  deskripsi?: string | null;
+
+  fasilitas?: string[] | null;
+  menu_populer?: string[] | null;
+  cocok_untuk?: string[] | null;
+
+  trans_kode?: string | null;
+  trans_jarak_meter?: number | null;
+  trans_tarif_min?: number | null;
+  trans_tarif_max?: number | null;
+  trans_rute?: string[] | null;
+};
 
 const CafeDetail: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
 
-  const cafe = cafeDetails.find((c) => c.slug === slug);
+  // ✅ type dari query param, contoh: ?type=kuliner
+  const typeParam = (searchParams.get("type") || "").toLowerCase();
+  const forcedType: ListingMode | null =
+    typeParam === "kuliner" ? "kuliner" : typeParam === "cafe" ? "cafe" : null;
+
+  // fallback detail lokal (tetap dipakai untuk field tambahan UI)
+  const localCafe = useMemo(() => cafeDetails.find((c) => c.slug === slug), [slug]);
+
+  const [apiItem, setApiItem] = useState<ApiItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    const fetchByType = async (t: ListingMode) => {
+      const path = t === "cafe" ? "/tempat_nongkrong" : "/kuliner";
+      const data = await api.get<ApiItem[]>(path);
+      return data.find((x) => slugify(x.nama_tempat || "") === slug) || null;
+    };
+
+    (async () => {
+      try {
+        setLoading(true);
+
+        let found: ApiItem | null = null;
+
+        if (forcedType) {
+          found = await fetchByType(forcedType);
+        } else {
+          // coba cafe dulu, kalau tidak ada baru kuliner
+          found = await fetchByType("cafe");
+          if (!found) found = await fetchByType("kuliner");
+        }
+
+        if (!alive) return;
+        setApiItem(found);
+      } catch {
+        if (!alive) return;
+        setApiItem(null);
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [slug, forcedType]);
+
+  const cafe = useMemo(() => {
+    if (!slug) return null;
+    if (!apiItem && !localCafe) return null;
+
+    const priceNumber = typeof apiItem?.htm === "number" ? apiItem!.htm : null;
+
+    const jamBuka = apiItem?.jam_buka || null;
+    const jamTutup = apiItem?.jam_tutup || null;
+
+    const mapsUrl = apiItem?.link_gmaps || localCafe?.mapsUrl || "";
+
+    return {
+      name: apiItem?.nama_tempat || localCafe?.name || "Tempat",
+      address: apiItem?.alamat || localCafe?.address || "-",
+      description: apiItem?.deskripsi || localCafe?.description || "-",
+      image: apiItem?.link_foto || localCafe?.image || "",
+      mapsUrl,
+
+      weekdayHours:
+        jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekdayHours || "-",
+      weekendHours:
+        jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekendHours || "-",
+      priceRange:
+        typeof priceNumber === "number"
+          ? `Rp ${priceNumber.toLocaleString("id-ID")}`
+          : localCafe?.priceRange || "-",
+
+      // UI tambahan tetap ambil dari local biar gak ngerusak desain
+      facilities: localCafe?.facilities || [],
+      popularMenu: localCafe?.popularMenu || [],
+      goodFor: localCafe?.goodFor || [],
+      featured: localCafe?.featured || {
+        ac: false,
+        wifi: false,
+        manySockets: false,
+        instaSpot: false,
+      },
+      trans: localCafe?.trans || {
+        corridor: "-",
+        distance: "-",
+        mainStop: "-",
+        routes: [],
+        fareMin: 0,
+        fareMax: 0,
+      },
+    };
+  }, [apiItem, localCafe, slug]);
 
   if (!cafe) {
     return (
@@ -30,7 +150,7 @@ const CafeDetail: React.FC = () => {
             <FiArrowLeft className="text-slate-700" />
             <span>Kembali</span>
           </button>
-          <p className="text-slate-700">Cafe tidak ditemukan.</p>
+          <p className="text-slate-700">Data tidak ditemukan.</p>
         </div>
       </main>
     );
@@ -44,15 +164,12 @@ const CafeDetail: React.FC = () => {
   ];
 
   const handleOpenMaps = () => {
-    if (cafe.mapsUrl) {
-      window.open(cafe.mapsUrl, "_blank", "noopener,noreferrer");
-    }
+    if (cafe.mapsUrl) window.open(cafe.mapsUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:py-8 lg:py-10">
       <div className="mx-auto w-full max-w-5xl lg:max-w-6xl">
-        {/* Tombol kembali */}
         <button
           onClick={() => navigate(-1)}
           className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-slate-50"
@@ -62,19 +179,12 @@ const CafeDetail: React.FC = () => {
         </button>
 
         <div className="grid gap-5 md:gap-6 lg:gap-8 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          {/* LEFT – info utama */}
           <section className="overflow-hidden rounded-3xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
-            {/* Hero image */}
             <div className="h-[220px] md:h-[260px] lg:h-[280px] overflow-hidden">
-              <img
-                src={cafe.image}
-                alt={cafe.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={cafe.image} alt={cafe.name} className="h-full w-full object-cover" />
             </div>
 
             <div className="space-y-4 px-5 pb-6 pt-4 md:px-7 md:pb-7 md:pt-5">
-              {/* Tentang tempat */}
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900 md:text-[20px]">
                   Tentang Tempat Ini
@@ -86,7 +196,6 @@ const CafeDetail: React.FC = () => {
 
               <hr className="border-slate-200" />
 
-              {/* Alamat, jam buka, harga */}
               <div className="space-y-3 text-[13px] text-slate-700 md:text-sm">
                 <div className="flex gap-3">
                   <FiMapPin className="mt-0.5 shrink-0 text-slate-500" />
@@ -109,11 +218,8 @@ const CafeDetail: React.FC = () => {
 
               <hr className="border-slate-200" />
 
-              {/* Fasilitas tempat */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Fasilitas Tempat
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-900">Fasilitas Tempat</h3>
                 <div className="grid grid-cols-2 gap-2 text-[12px] md:grid-cols-3">
                   {cafe.facilities.map((item) => (
                     <span
@@ -126,11 +232,8 @@ const CafeDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Menu populer */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Menu Populer
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-900">Menu Populer</h3>
                 <div className="flex flex-wrap gap-2 text-[12px]">
                   {cafe.popularMenu.map((item) => (
                     <span
@@ -143,11 +246,8 @@ const CafeDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cocok untuk */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Cocok Untuk
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-900">Cocok Untuk</h3>
                 <div className="flex flex-wrap gap-2 text-[12px]">
                   {cafe.goodFor.map((item) => (
                     <span
@@ -162,13 +262,9 @@ const CafeDetail: React.FC = () => {
             </div>
           </section>
 
-          {/* RIGHT – fasilitas unggulan + trans */}
           <div className="flex flex-col gap-4 md:gap-5">
-            {/* Fasilitas unggulan */}
             <section className="rounded-3xl bg-white px-5 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.12)] md:px-6 md:py-5">
-              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">
-                Fasilitas Unggulan
-              </h3>
+              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">Fasilitas Unggulan</h3>
               <div className="grid grid-cols-2 gap-3">
                 {featuredItems
                   .filter((item) => cafe.featured[item.key])
@@ -184,19 +280,14 @@ const CafeDetail: React.FC = () => {
               </div>
             </section>
 
-            {/* Akses Trans Banyumas */}
             <section className="rounded-3xl bg-white px-5 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.12)] md:px-6 md:py-5">
-              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">
-                Akses Trans Banyumas
-              </h3>
+              <h3 className="mb-4 text-[18px] font-semibold text-slate-900">Akses Trans Banyumas</h3>
 
               <div className="mb-3 flex items-center justify-between">
                 <span className="rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold text-slate-900 shadow-sm">
                   {cafe.trans.corridor}
                 </span>
-                <span className="text-xs font-medium text-slate-700">
-                  {cafe.trans.distance}
-                </span>
+                <span className="text-xs font-medium text-slate-700">{cafe.trans.distance}</span>
               </div>
 
               <div className="space-y-1 text-sm text-slate-700">
@@ -220,7 +311,6 @@ const CafeDetail: React.FC = () => {
               </div>
             </section>
 
-            {/* Tombol bawah */}
             <section className="mt-1 rounded-3xl bg-white px-5 py-4 shadow-[0_10px_28px_rgba(15,23,42,0.10)] md:px-6">
               <button
                 onClick={handleOpenMaps}
@@ -232,6 +322,11 @@ const CafeDetail: React.FC = () => {
               <button className="w-full rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
                 Simpan ke Favorit
               </button>
+
+              {/* loading state tetap gak ganggu UI */}
+              {/* <p className="mt-3 text-[11px] text-slate-400">
+                {loading ? "Loading..." : "Done"}
+              </p> */}
             </section>
           </div>
         </div>

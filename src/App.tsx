@@ -23,10 +23,15 @@ import { ChatProvider } from "./context/ChatContext";
 
 // ADMIN
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLoginPage from "./pages/AdminLoginPage";
 
 // AUTH
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+
+// ✅ Protected Routes
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 
 function App() {
   return (
@@ -35,7 +40,7 @@ function App() {
         {/* HOME */}
         <Route path="/" element={<Home />} />
 
-        {/* AUTH */}
+        {/* AUTH USER */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
@@ -45,16 +50,35 @@ function App() {
 
         {/* WISATA */}
         <Route path="/wisata" element={<WisataPage />} />
-        <Route path="/wisata/:slug" element={<WisataDetail />} />
+        <Route path="/wisata/:id" element={<WisataDetail />} />
 
         {/* TRANS BANYUMAS */}
         <Route path="/trans" element={<TransBanyumas />} />
 
-        {/* ADMIN DASHBOARD */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        {/* ADMIN AUTH */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        {/* (OPSIONAL) FALLBACK 404 → Arahkan ke Home dulu */}
-        {/* <Route path="*" element={<Home />} /> */}
+        {/* ADMIN (protected khusus admin) */}
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboard />
+            </AdminProtectedRoute>
+          }
+        />
+
+        {/* (Opsional) contoh kalau nanti ada route user protected lain */}
+        {/* 
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        /> 
+        */}
       </Routes>
 
       {/* GLOBAL CHAT BOT */}
