@@ -6,11 +6,13 @@ import {
   ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
+import { api } from "../lib/api";
 
 export type FaqEntry = {
   id: number;
-  question: string;   // disimpan sebagai kata kunci (lowercase)
+  question: string; // kata kunci (lowercase)
   answer: string;
   timesUsed: number;
   createdAt: string;
@@ -27,47 +29,41 @@ type ChatContextValue = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
-  // FAQ & statistik
+  sessionId: string | null;
+
   faqs: FaqEntry[];
   topFaqs: FaqEntry[];
   stats: ChatStats;
 
-  addFaq: (question: string, answer: string) => void;
-  deleteFaq: (id: number) => void;
-  getFaqAnswer: (prompt: string) => string | null;
+  addFaq: (question: string, answer: string) => Promise<void>;
+  deleteFaq: (id: number) => Promise<void>;
+
+  // match FAQ local (from DB list)
+  getFaqAnswer: (prompt: string) => { answer: string; faqId: number } | null;
+
+  refreshStats: () => Promise<void>;
+  logChatToServer: (question: string, answer: string, fromFaq: boolean) => Promise<void>;
+
   registerUserMessage: () => void;
-  registerBotMessage: (fromFaq: boolean) => void;
+  registerBotMessage: (_fromFaq: boolean) => void;
 };
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
-type ChatProviderProps = {
-  children: ReactNode;
-};
+type ChatProviderProps = { children: ReactNode };
 
-// FAQ awal contoh
-const initialFaqs: FaqEntry[] = [
-  {
-    id: 1,
-    question: "trans banyumas",
-    answer:
-      "Trans Banyumas memiliki beberapa koridor utama. Kamu bisa lihat detail rute & halte di halaman Trans Banyumas di ExploreMas 😊",
-    timesUsed: 0,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    question: "rekomendasi cafe",
-    answer:
-      "Beberapa rekomendasi cafe di Purwokerto: Kopi Calf, Cold 'N Brew, Advo Cafe. Cek juga halaman Cafe untuk pilihan lengkapnya.",
-    timesUsed: 0,
-    createdAt: new Date().toISOString(),
-  },
-];
+function makeSessionId() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const g: any = globalThis as any;
+  if (g?.crypto?.randomUUID) return g.crypto.randomUUID();
+  return `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
 
 export function ChatProvider({ children }: ChatProviderProps) {
   const [open, setOpen] = useState(false);
-  const [faqs, setFaqs] = useState<FaqEntry[]>(initialFaqs);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const [faqs, setFaqs] = useState<FaqEntry[]>([]);
   const [stats, setStats] = useState<ChatStats>({
     totalSessions: 0,
     totalUserMessages: 0,
@@ -75,99 +71,118 @@ export function ChatProvider({ children }: ChatProviderProps) {
     totalFaqMatched: 0,
   });
 
-  // hitung FAQ paling sering dipakai
+  const prevOpenRef = useRef<boolean>(false);
+
   const topFaqs = useMemo(
-    () => [...faqs].sort((a, b) => b.timesUsed - a.timesUsed).slice(0, 5),
+    () => [...faqs].sort((a, b) => (b.timesUsed || 0) - (a.timesUsed || 0)).slice(0, 5),
     [faqs]
   );
 
-  // setiap kali chat dibuka dari tertutup -> terbuka, hitung sebagai sesi baru
-  useEffect(() => {
-    let prev = false;
-    return () => {
-      prev = open;
-    };
-  }, []);
+  const refreshStats = async () => {
+    try {
+      const res = await api.get<ChatStats>("/api/chat/stats");
+      setStats({
+        totalSessions: Number((res as any)?.totalSessions ?? 0),
+        totalUserMessages: Number((res as any)?.totalUserMessages ?? 0),
+        totalBotMessages: Number((res as any)?.totalBotMessages ?? 0),
+        totalFaqMatched: Number((res as any)?.totalFaqMatched ?? 0),
+      });
+    } catch (e) {
+      console.error("refreshStats error:", e);
+    }
+  };
 
-  useEffect(() => {
-    // sederhana: tiap kali open berubah dari false ke true, tambah sesi
-    setStats((prev) => ({
-      ...prev,
-      totalSessions: open ? prev.totalSessions + 1 : prev.totalSessions,
-    }));
-  }, [open]);
+  const refreshFaqs = async () => {
+    try {
+      const rows = await api.get<any[]>("/api/faqs");
+      const mapped: FaqEntry[] = (rows || []).map((r) => ({
+        id: Number(r.id),
+        question: String(r.question || "").toLowerCase(),
+        answer: String(r.answer || ""),
+        timesUsed: Number(r.times_used ?? r.timesUsed ?? 0),
+        createdAt: String(r.created_at ?? r.createdAt ?? new Date().toISOString()),
+      }));
+      setFaqs(mapped);
+    } catch (e) {
+      console.error("refreshFaqs error:", e);
+      setFaqs([]); // biar UI tetap jalan
+    }
+  };
 
-  function addFaq(question: string, answer: string) {
-    const q = question.trim().toLowerCase();
+  const addFaq = async (question: string, answer: string) => {
+    const q = question.trim();
     const a = answer.trim();
     if (!q || !a) return;
 
-    const newFaq: FaqEntry = {
-      id: faqs.length ? faqs[faqs.length - 1].id + 1 : 1,
-      question: q,
-      answer: a,
-      timesUsed: 0,
-      createdAt: new Date().toISOString(),
-    };
+    await api.post("/api/faqs", { question: q, answer: a });
+    await refreshFaqs();
+  };
 
-    setFaqs((prev) => [...prev, newFaq]);
-  }
+  const deleteFaq = async (id: number) => {
+    await api.delete(`/api/faqs/${id}`);
+    await refreshFaqs();
+  };
 
-  function deleteFaq(id: number) {
-    setFaqs((prev) => prev.filter((f) => f.id !== id));
-  }
-
-  // cari jawaban FAQ berdasar kata kunci yang mengandung
-  function getFaqAnswer(prompt: string): string | null {
+  // match FAQ berdasar keyword
+  function getFaqAnswer(prompt: string): { answer: string; faqId: number } | null {
     const lower = prompt.toLowerCase();
-
-    const matched = faqs.find((f) =>
-      lower.includes(f.question.toLowerCase())
-    );
-
+    const matched = faqs.find((f) => lower.includes(f.question.toLowerCase()));
     if (!matched) return null;
 
-    // update hit FAQ
-    setFaqs((prev) =>
-      prev.map((f) =>
-        f.id === matched.id ? { ...f, timesUsed: f.timesUsed + 1 } : f
-      )
-    );
+    // hit di DB (async, tanpa nge-block)
+    api.post(`/api/faqs/${matched.id}/hit`, {}).then(refreshFaqs).catch(() => {});
 
-    setStats((prev) => ({
-      ...prev,
-      totalFaqMatched: prev.totalFaqMatched + 1,
-    }));
-
-    return matched.answer;
+    return { answer: matched.answer, faqId: matched.id };
   }
 
-  function registerUserMessage() {
-    setStats((prev) => ({
-      ...prev,
-      totalUserMessages: prev.totalUserMessages + 1,
-    }));
-  }
+  const logChatToServer = async (question: string, answer: string, fromFaq: boolean) => {
+    const sid = sessionId || makeSessionId();
+    if (!sessionId) setSessionId(sid);
 
-  function registerBotMessage(fromFaq: boolean) {
-    setStats((prev) => ({
-      ...prev,
-      totalBotMessages: prev.totalBotMessages + 1,
-      totalFaqMatched: prev.totalFaqMatched + (fromFaq ? 1 : 0),
-    }));
-  }
+    try {
+      await api.post("/api/chat/log", {
+        session_id: sid,
+        question,
+        answer,
+        from_faq: fromFaq,
+      });
+      await refreshStats();
+    } catch (e) {
+      console.error("logChatToServer error:", e);
+    }
+  };
+
+  // on mount: load faq + stats
+  useEffect(() => {
+    refreshFaqs();
+    refreshStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // new session when open: false -> true
+  useEffect(() => {
+    const prev = prevOpenRef.current;
+    if (!prev && open) setSessionId(makeSessionId());
+    prevOpenRef.current = open;
+  }, [open]);
+
+  function registerUserMessage() {}
+  function registerBotMessage(_fromFaq: boolean) {}
 
   return (
     <ChatContext.Provider
       value={{
         open,
         setOpen,
+        sessionId,
         faqs,
         topFaqs,
         stats,
         addFaq,
         deleteFaq,
         getFaqAnswer,
+        refreshStats,
+        logChatToServer,
         registerUserMessage,
         registerBotMessage,
       }}
@@ -179,8 +194,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
 export function useChat() {
   const ctx = useContext(ChatContext);
-  if (!ctx) {
-    throw new Error("useChat must be used within a ChatProvider");
-  }
+  if (!ctx) throw new Error("useChat must be used within a ChatProvider");
   return ctx;
 }
