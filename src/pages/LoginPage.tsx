@@ -1,6 +1,7 @@
-// src/pages/LoginPage.tsx
 import React, { useState, FormEvent } from "react";
-import loginMascot from "../assets/images/maskot/login.png";
+import loginMascot from "../assets/images/maskot/login.png"; // gambar di halaman (ASLI)
+import Swal from "sweetalert2"; // ✅ SweetAlert
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { setSessionLoggedIn, setToken } from "../lib/auth";
 import { api } from "../lib/api";
@@ -11,7 +12,6 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // UI tetap: label "Email", tapi input boleh username / email
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showErrors, setShowErrors] = useState(false);
@@ -38,10 +38,8 @@ const LoginPage: React.FC = () => {
         password,
       };
 
-      // ✅ USER LOGIN ONLY (tanpa admin_login)
       const data: LoginResponse = await api.post<LoginResponse>("/login", payload);
 
-      // ✅ kalau backend balikin string "Logged in" (text/plain), jangan diparse token
       if (typeof data === "string") {
         setSessionLoggedIn();
       } else {
@@ -54,14 +52,40 @@ const LoginPage: React.FC = () => {
         if (token) {
           setToken(String(token));
         } else {
-          // kalau BE cuma balikin response sederhana tanpa token
           setSessionLoggedIn();
         }
       }
 
+      // ✅ simpan username (biar Navbar bisa Welcome, nama)
+      localStorage.setItem("exploremas_username", email);
+      window.dispatchEvent(new Event("authChanged"));
+
+      // ✅ SweetAlert sukses (pakai login.png yang valid)
+      await Swal.fire({
+        title: "Login berhasil!",
+        text: "Selamat datang kembali 👋",
+        imageUrl: loginMascot,
+        imageWidth: 150,
+        imageAlt: "Login mascot",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+
       navigate(from, { replace: true });
     } catch (err: any) {
-      setApiError(String(err?.message || err));
+      const msg = String(err?.message || "Username atau password salah");
+
+      // ✅ SweetAlert gagal (pakai login.png yang valid)
+      await Swal.fire({
+        title: "Login gagal",
+        text: msg,
+        imageUrl: loginMascot,
+        imageWidth: 150,
+        imageAlt: "Login mascot",
+        confirmButtonText: "OK",
+      });
+
+      setApiError(msg);
     } finally {
       setLoading(false);
     }
@@ -75,11 +99,7 @@ const LoginPage: React.FC = () => {
       <div className="w-[min(420px,92%)] bg-white shadow-[0_18px_45px_rgba(12,27,76,0.14)] rounded-3xl p-8 border border-[#E3E6F5]">
         {/* ===== MASKOT LOGIN ===== */}
         <div className="flex justify-center -mt-20 mb-2">
-          <img
-            src={loginMascot}
-            alt="Login Mascot"
-            className="w-[120px] h-auto"
-          />
+          <img src={loginMascot} alt="Login Mascot" className="w-[120px] h-auto" />
         </div>
 
         {/* ===== HEADER ===== */}
@@ -104,11 +124,9 @@ const LoginPage: React.FC = () => {
 
         {/* ===== FORM ===== */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email (UI tetap) */}
+          {/* Email */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Email
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Email</label>
             <input
               type="text"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -134,9 +152,7 @@ const LoginPage: React.FC = () => {
 
           {/* Password */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Kata sandi
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Kata sandi</label>
             <input
               type="password"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -194,10 +210,7 @@ const LoginPage: React.FC = () => {
         {/* Register link */}
         <p className="mt-6 text-center text-[11px] text-[#5E6282]">
           Belum punya akun?{" "}
-          <a
-            href="/register"
-            className="font-semibold text-[#0f1f56] hover:underline"
-          >
+          <a href="/register" className="font-semibold text-[#0f1f56] hover:underline">
             Daftar sekarang
           </a>
         </p>

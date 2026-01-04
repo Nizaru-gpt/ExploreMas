@@ -1,14 +1,16 @@
-// src/pages/RegisterPage.tsx
 import React, { useState, FormEvent } from "react";
-import registerMascot from "../assets/images/maskot/register.png";
+import registerMascot from "../assets/images/maskot/register.png"; // (ASLI) gambar di page
+import loginMascot from "../assets/images/maskot/login.png"; // ✅ untuk SweetAlert (sesuai request)
+import Swal from "sweetalert2"; // ✅ SweetAlert
+
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
 type RegisterResponse = any;
 
 function extractApiMessage(err: any) {
+  // jaga-jaga kalau error-nya object / string
   const msg = String(err?.message || err || "");
-  // kalau error message berisi JSON dari backend
   try {
     const parsed = JSON.parse(msg);
     if (parsed?.message) return String(parsed.message);
@@ -40,6 +42,7 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
     setApiError(null);
 
+    // payload asli kamu (biar nggak berubah flow)
     const payload = {
       username: fullName,
       email,
@@ -47,25 +50,35 @@ const RegisterPage: React.FC = () => {
     };
 
     try {
-      // ✅ route backend kamu yang bener: /register
+      // route backend kamu yang bener: /register
       await api.post<RegisterResponse>("/register", payload);
+
+      // ✅ SweetAlert sukses (pakai login.png sesuai request)
+      await Swal.fire({
+        title: "Registrasi berhasil!",
+        text: "Silakan login ya 🙂",
+        imageUrl: loginMascot,
+        imageWidth: 150,
+        imageAlt: "Login mascot",
+        showConfirmButton: false,
+        timer: 1600,
+      });
+
       navigate("/login");
     } catch (err: any) {
-      const msg = extractApiMessage(err);
+      const msg = extractApiMessage(err) || "Gagal membuat akun";
 
-      // ✅ fallback hanya kalau 404 (misal environment tertentu)
-      if (msg.includes("HTTP 404")) {
-        try {
-          await api.post<RegisterResponse>("/api/register", payload);
-          navigate("/login");
-          return;
-        } catch (e2: any) {
-          setApiError(extractApiMessage(e2));
-        }
-      } else {
-        // ✅ tampilkan error validasi 400 dari BE
-        setApiError(msg);
-      }
+      // ✅ SweetAlert gagal (pakai login.png sesuai request)
+      await Swal.fire({
+        title: "Registrasi gagal",
+        text: msg,
+        imageUrl: loginMascot,
+        imageWidth: 150,
+        imageAlt: "Login mascot",
+        confirmButtonText: "OK",
+      });
+
+      setApiError(msg);
     } finally {
       setLoading(false);
     }
@@ -120,7 +133,6 @@ const RegisterPage: React.FC = () => {
               }}
             />
             {nameError && <p className="text-[11px] text-[#b91c1c]">Nama lengkap tidak boleh kosong.</p>}
-            {/* ✅ hint validasi backend */}
             <p className="text-[11px] text-slate-400">Username backend: 4–16 karakter.</p>
           </div>
 
@@ -164,7 +176,6 @@ const RegisterPage: React.FC = () => {
               }}
             />
             {passwordError && <p className="text-[11px] text-[#b91c1c]">Kata sandi tidak boleh kosong.</p>}
-            {/* ✅ hint validasi backend */}
             <p className="text-[11px] text-slate-400">Password backend: 8–16 karakter.</p>
           </div>
 
