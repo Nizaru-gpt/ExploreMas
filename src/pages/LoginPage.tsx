@@ -38,32 +38,26 @@ const LoginPage: React.FC = () => {
         password,
       };
 
-      // ✅ prioritas admin dulu, kalau gagal baru user
-      let data: LoginResponse | null = null;
-      let lastErr: any = null;
+      // ✅ USER LOGIN ONLY (tanpa admin_login)
+      const data: LoginResponse = await api.post<LoginResponse>("/login", payload);
 
-      try {
-        data = await api.post<LoginResponse>("/admin_login", payload);
-      } catch (err) {
-        lastErr = err;
-        data = await api.post<LoginResponse>("/login", payload);
-      }
-
-      // ✅ token kalau ada
-      const token =
-        data?.token ||
-        data?.access_token ||
-        data?.data?.token ||
-        data?.data?.access_token;
-
-      if (token) {
-        setToken(String(token));
-      } else {
-        // kalau BE cuma balikin string / response sederhana
+      // ✅ kalau backend balikin string "Logged in" (text/plain), jangan diparse token
+      if (typeof data === "string") {
         setSessionLoggedIn();
-      }
+      } else {
+        const token =
+          data?.token ||
+          data?.access_token ||
+          data?.data?.token ||
+          data?.data?.access_token;
 
-      console.log("LOGIN OK response:", data, "fallbackErr:", lastErr);
+        if (token) {
+          setToken(String(token));
+        } else {
+          // kalau BE cuma balikin response sederhana tanpa token
+          setSessionLoggedIn();
+        }
+      }
 
       navigate(from, { replace: true });
     } catch (err: any) {

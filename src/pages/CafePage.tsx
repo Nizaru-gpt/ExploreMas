@@ -52,7 +52,14 @@ type TempatNongkrongApi = {
   alamat: string;
   jam_buka: string;
   jam_tutup: string;
+
+  // ✅ legacy
   htm: number;
+
+  // ✅ range baru
+  htm_min?: number | null;
+  htm_max?: number | null;
+
   link_gmaps: string;
   link_foto: string;
   deskripsi?: string | null;
@@ -73,7 +80,14 @@ type KulinerApi = {
   nama_tempat: string;
   kategori: string;
   alamat: string;
+
+  // ✅ legacy
   htm: number;
+
+  // ✅ range baru
+  htm_min?: number | null;
+  htm_max?: number | null;
+
   link_gmaps: string;
   link_foto: string;
   deskripsi?: string | null;
@@ -104,14 +118,31 @@ type CafeUI = {
   _type: ListingMode;
 };
 
-const formatPrice = (htm: number) => {
-  if (htm === 0) return "Gratis";
-  if (htm < 0) return "-";
-  try {
-    return `Rp ${htm.toLocaleString("id-ID")}`;
-  } catch {
-    return `Rp ${htm}`;
+// ✅ formatter harga range (baru) + fallback legacy
+const formatPriceRange = (min?: number | null, max?: number | null, legacyHtm?: number | null) => {
+  const hasMin = typeof min === "number" && Number.isFinite(min);
+  const hasMax = typeof max === "number" && Number.isFinite(max);
+
+  const fmt = (n: number) => {
+    try {
+      return n.toLocaleString("id-ID");
+    } catch {
+      return String(n);
+    }
+  };
+
+  // kalau ada range
+  if (hasMin && hasMax) {
+    if (min === 0 && max === 0) return "Gratis";
+    if (min === max) return min === 0 ? "Gratis" : `Rp ${fmt(min)}`;
+    return `Rp ${fmt(min)} - ${fmt(max)}`;
   }
+
+  // fallback ke legacy htm
+  const v = typeof legacyHtm === "number" && Number.isFinite(legacyHtm) ? legacyHtm : 0;
+  if (v === 0) return "Gratis";
+  if (v < 0) return "-";
+  return `Rp ${fmt(v)}`;
 };
 
 // ====== infer fasilitas dari teks (fallback) ======
@@ -214,9 +245,9 @@ const CafePage: React.FC = () => {
               description: desc || "-",
               address: r.alamat ?? "-",
               detailInfo: `${r.jam_buka ?? "-"} - ${r.jam_tutup ?? "-"}`,
-              priceRange: formatPrice(r.htm),
+              // ✅ pakai range dulu, fallback ke htm
+              priceRange: formatPriceRange(r.htm_min, r.htm_max, r.htm),
               imageUrl: r.link_foto || "https://via.placeholder.com/640x400?text=No+Image",
-              // ✅ ambil dari API kalau ada, fallback ke infer
               facilities: normalizeFacilitiesFromApi(r.fasilitas, textForFacility),
               _type: "cafe",
             };
@@ -240,9 +271,9 @@ const CafePage: React.FC = () => {
               description: desc || "-",
               address: r.alamat ?? "-",
               detailInfo: `${jb} - ${jt}`,
-              priceRange: formatPrice(r.htm),
+              // ✅ pakai range dulu, fallback ke htm
+              priceRange: formatPriceRange(r.htm_min, r.htm_max, r.htm),
               imageUrl: r.link_foto || "https://via.placeholder.com/640x400?text=No+Image",
-              // ✅ ambil dari API kalau ada, fallback ke infer
               facilities: normalizeFacilitiesFromApi(r.fasilitas, textForFacility),
               _type: "kuliner",
             };

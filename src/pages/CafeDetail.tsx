@@ -20,7 +20,14 @@ type ApiItem = {
   alamat: string;
   jam_buka?: string | null;
   jam_tutup?: string | null;
+
+  // ✅ legacy
   htm: number;
+
+  // ✅ range baru
+  htm_min?: number | null;
+  htm_max?: number | null;
+
   link_gmaps: string;
   link_foto: string;
   deskripsi?: string | null;
@@ -42,6 +49,23 @@ const formatRp = (n: number) => {
   } catch {
     return String(n);
   }
+};
+
+// ✅ formatter harga range (baru) + fallback legacy
+const formatPriceRange = (min?: number | null, max?: number | null, legacyHtm?: number | null) => {
+  const hasMin = typeof min === "number" && Number.isFinite(min);
+  const hasMax = typeof max === "number" && Number.isFinite(max);
+
+  if (hasMin && hasMax) {
+    if (min === 0 && max === 0) return "Gratis";
+    if (min === max) return min === 0 ? "Gratis" : `Rp ${formatRp(min)}`;
+    return `Rp ${formatRp(min)} - ${formatRp(max)}`;
+  }
+
+  const v = typeof legacyHtm === "number" && Number.isFinite(legacyHtm) ? legacyHtm : 0;
+  if (v === 0) return "Gratis";
+  if (v < 0) return "-";
+  return `Rp ${formatRp(v)}`;
 };
 
 const CafeDetail: React.FC = () => {
@@ -100,8 +124,6 @@ const CafeDetail: React.FC = () => {
     if (!slug) return null;
     if (!apiItem && !localCafe) return null;
 
-    const priceNumber = typeof apiItem?.htm === "number" ? apiItem!.htm : null;
-
     const jamBuka = apiItem?.jam_buka || null;
     const jamTutup = apiItem?.jam_tutup || null;
 
@@ -137,7 +159,7 @@ const CafeDetail: React.FC = () => {
       ? {
           corridor: transKode || "-",
           distance: transJarak != null ? `±${transJarak} meter` : "-",
-          mainStop: "-", // kalau kamu punya field halte utama, isi di BE/DB. Untuk sekarang biarin "-"
+          mainStop: "-",
           routes: transRute || [],
           fareMin: transMin ?? 0,
           fareMax: transMax ?? 0,
@@ -161,15 +183,9 @@ const CafeDetail: React.FC = () => {
       weekdayHours: jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekdayHours || "-",
       weekendHours: jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekendHours || "-",
 
-      // ✅ harga tampil range (kalau API nanti kamu ubah jadi string range, tinggal sesuaikan di sini)
-      priceRange:
-        typeof priceNumber === "number"
-          ? priceNumber === 0
-            ? "Gratis"
-            : `Rp ${priceNumber.toLocaleString("id-ID")}`
-          : localCafe?.priceRange || "-",
+      // ✅ harga tampil range dulu (htm_min/htm_max), fallback ke htm
+      priceRange: formatPriceRange(apiItem?.htm_min, apiItem?.htm_max, apiItem?.htm ?? null) || localCafe?.priceRange || "-",
 
-      // ✅ sekarang baca dari API
       facilities: fasilitasArr || [],
       popularMenu: menuArr || [],
       goodFor: cocokArr || [],
@@ -241,6 +257,7 @@ const CafeDetail: React.FC = () => {
                   <p>{cafe.address}</p>
                 </div>
 
+                {/* ✅ JAM tetap 2 baris, gak jadi digabung */}
                 <div className="flex gap-3">
                   <FiClock className="mt-0.5 shrink-0 text-slate-500" />
                   <div>
@@ -376,11 +393,6 @@ const CafeDetail: React.FC = () => {
               <button className="w-full rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
                 Simpan ke Favorit
               </button>
-
-              {/* kalau mau debug:
-              <p className="mt-3 text-[11px] text-slate-400">
-                {loading ? "Loading..." : "Done"}
-              </p> */}
             </section>
           </div>
         </div>

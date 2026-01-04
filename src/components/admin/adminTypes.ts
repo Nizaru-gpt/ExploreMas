@@ -21,6 +21,9 @@ export type AdminPlace = {
   openTime?: string;
   closeTime?: string;
 
+  // ✅ tambahan (untuk UI admin)
+  is24Hours?: boolean;
+
   fasilitas?: string[];
 
   deskripsi?: string;
@@ -47,6 +50,9 @@ export type PlaceForm = {
   price: string;
   openTime: string;
   closeTime: string;
+
+  // ✅ tambahan (checkbox 24 jam)
+  is24Hours: boolean;
 
   deskripsi: string;
   link_gmaps: string;

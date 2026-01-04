@@ -6,6 +6,16 @@ import { api } from "../lib/api";
 
 type RegisterResponse = any;
 
+function extractApiMessage(err: any) {
+  const msg = String(err?.message || err || "");
+  // kalau error message berisi JSON dari backend
+  try {
+    const parsed = JSON.parse(msg);
+    if (parsed?.message) return String(parsed.message);
+  } catch {}
+  return msg;
+}
+
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -22,14 +32,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (
-      !fullName ||
-      !email ||
-      !password ||
-      !confirm ||
-      !agree ||
-      password !== confirm
-    ) {
+    if (!fullName || !email || !password || !confirm || !agree || password !== confirm) {
       setShowErrors(true);
       return;
     }
@@ -37,23 +40,32 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
     setApiError(null);
 
+    const payload = {
+      username: fullName,
+      email,
+      password,
+    };
+
     try {
-      const payload = {
-        username: fullName,
-        email,
-        password,
-      };
-
-      // ✅ coba /register dulu, kalau gak ada baru /api/register
-      try {
-        await api.post<RegisterResponse>("/register", payload);
-      } catch {
-        await api.post<RegisterResponse>("/api/register", payload);
-      }
-
+      // ✅ route backend kamu yang bener: /register
+      await api.post<RegisterResponse>("/register", payload);
       navigate("/login");
     } catch (err: any) {
-      setApiError(String(err?.message || err));
+      const msg = extractApiMessage(err);
+
+      // ✅ fallback hanya kalau 404 (misal environment tertentu)
+      if (msg.includes("HTTP 404")) {
+        try {
+          await api.post<RegisterResponse>("/api/register", payload);
+          navigate("/login");
+          return;
+        } catch (e2: any) {
+          setApiError(extractApiMessage(e2));
+        }
+      } else {
+        // ✅ tampilkan error validasi 400 dari BE
+        setApiError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -68,43 +80,29 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-[#f5f4ff]">
       <div className="w-[min(440px,94%)] bg-white shadow-[0_18px_45px_rgba(12,27,76,0.14)] rounded-3xl p-8 border border-[#E3E6F5]">
-        {/* ===== MASKOT REGISTER ===== */}
         <div className="flex justify-center -mt-20 mb-2">
-          <img
-            src={registerMascot}
-            alt="Register Mascot"
-            className="w-[125px] h-auto"
-          />
+          <img src={registerMascot} alt="Register Mascot" className="w-[125px] h-auto" />
         </div>
 
-        {/* Header */}
         <div className="mb-6 text-center">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-[#5E6282] uppercase">
             Join the journey
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-[#181E4B]">
-            Buat akun baru
-          </h1>
+          <h1 className="mt-2 text-2xl font-extrabold text-[#181E4B]">Buat akun baru</h1>
           <p className="text-xs mt-2 text-[#5E6282]">
-            Mulai merencanakan perjalanan dan nikmati ritme slow–living di
-            Purwokerto.
+            Mulai merencanakan perjalanan dan nikmati ritme slow–living di Purwokerto.
           </p>
         </div>
 
-        {/* ERROR BAR */}
         {apiError && (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
             {apiError}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nama */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Nama lengkap
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Nama lengkap</label>
             <input
               type="text"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -121,18 +119,13 @@ const RegisterPage: React.FC = () => {
                 if (apiError) setApiError(null);
               }}
             />
-            {nameError && (
-              <p className="text-[11px] text-[#b91c1c]">
-                Nama lengkap tidak boleh kosong.
-              </p>
-            )}
+            {nameError && <p className="text-[11px] text-[#b91c1c]">Nama lengkap tidak boleh kosong.</p>}
+            {/* ✅ hint validasi backend */}
+            <p className="text-[11px] text-slate-400">Username backend: 4–16 karakter.</p>
           </div>
 
-          {/* Email */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Email
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Email</label>
             <input
               type="email"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -149,18 +142,11 @@ const RegisterPage: React.FC = () => {
                 if (apiError) setApiError(null);
               }}
             />
-            {emailError && (
-              <p className="text-[11px] text-[#b91c1c]">
-                Email tidak boleh kosong.
-              </p>
-            )}
+            {emailError && <p className="text-[11px] text-[#b91c1c]">Email tidak boleh kosong.</p>}
           </div>
 
-          {/* Password */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Kata sandi
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Kata sandi</label>
             <input
               type="password"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -169,7 +155,7 @@ const RegisterPage: React.FC = () => {
                   ? "border-[#f87171] ring-1 ring-[#fca5a5]"
                   : "border-[#E3E6F5] focus:border-[#0f1f56] focus:ring-1 focus:ring-[#0f1f56]/40"
               } bg-white`}
-              placeholder="Minimal 6 karakter"
+              placeholder="Minimal 8 karakter"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -177,18 +163,13 @@ const RegisterPage: React.FC = () => {
                 if (apiError) setApiError(null);
               }}
             />
-            {passwordError && (
-              <p className="text-[11px] text-[#b91c1c]">
-                Kata sandi tidak boleh kosong.
-              </p>
-            )}
+            {passwordError && <p className="text-[11px] text-[#b91c1c]">Kata sandi tidak boleh kosong.</p>}
+            {/* ✅ hint validasi backend */}
+            <p className="text-[11px] text-slate-400">Password backend: 8–16 karakter.</p>
           </div>
 
-          {/* Konfirmasi Password */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#181E4B]">
-              Konfirmasi kata sandi
-            </label>
+            <label className="block text-xs font-medium text-[#181E4B]">Konfirmasi kata sandi</label>
             <input
               type="password"
               className={`w-full rounded-2xl border px-3.5 py-2.5 text-sm outline-none transition
@@ -205,14 +186,9 @@ const RegisterPage: React.FC = () => {
                 if (apiError) setApiError(null);
               }}
             />
-            {confirmError && (
-              <p className="text-[11px] text-[#b91c1c]">
-                Konfirmasi kata sandi tidak cocok.
-              </p>
-            )}
+            {confirmError && <p className="text-[11px] text-[#b91c1c]">Konfirmasi kata sandi tidak cocok.</p>}
           </div>
 
-          {/* Terms */}
           <div className="space-y-1">
             <label className="flex items-start gap-2 text-[11px] text-[#5E6282]">
               <input
@@ -225,18 +201,11 @@ const RegisterPage: React.FC = () => {
                 }}
                 className="mt-[2px] rounded border-[#E3E6F5]"
               />
-              <span>
-                Saya menyetujui syarat & ketentuan serta kebijakan privasi.
-              </span>
+              <span>Saya menyetujui syarat & ketentuan serta kebijakan privasi.</span>
             </label>
-            {agreeError && (
-              <p className="text-[11px] text-[#b91c1c]">
-                Kamu harus menyetujui syarat & ketentuan.
-              </p>
-            )}
+            {agreeError && <p className="text-[11px] text-[#b91c1c]">Kamu harus menyetujui syarat & ketentuan.</p>}
           </div>
 
-          {/* Button */}
           <div className="mt-4 relative">
             <span
               aria-hidden
@@ -256,13 +225,9 @@ const RegisterPage: React.FC = () => {
           </div>
         </form>
 
-        {/* Link ke login */}
         <p className="mt-6 text-center text-[11px] text-[#5E6282]">
           Sudah punya akun?{" "}
-          <a
-            href="/login"
-            className="font-semibold text-[#0f1f56] hover:underline"
-          >
+          <a href="/login" className="font-semibold text-[#0f1f56] hover:underline">
             Masuk di sini
           </a>
         </p>

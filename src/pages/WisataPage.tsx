@@ -1,3 +1,4 @@
+// src/pages/WisataPage.tsx
 import React, { useEffect, useMemo, useRef, useState, MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -67,7 +68,11 @@ const allTagFilters: WisataTag[] = [
 const fmtPrice = (htm: number) => {
   if (htm == null || htm < 0) return "—";
   if (htm === 0) return "Gratis";
-  return `Rp ${htm.toLocaleString("id-ID")}`;
+  try {
+    return `Rp ${htm.toLocaleString("id-ID")}`;
+  } catch {
+    return `Rp ${htm}`;
+  }
 };
 
 // heuristik tags biar filter & icon bawah card tetap “hidup”
@@ -81,12 +86,15 @@ const deriveTags = (
   if (source === "alam") tags.push("nature");
   if (source === "pendidikan") tags.push("education");
 
+  // murah
   if (row.htm >= 0 && row.htm <= 20000) tags.push("cheap");
 
+  // waterpark heuristic
   if (name.includes("water") || name.includes("owabong") || name.includes("kolam")) {
     tags.push("waterpark");
   }
 
+  // default
   tags.push("parking");
   tags.push("instagrammable");
 
@@ -95,7 +103,9 @@ const deriveTags = (
 
 const WisataPage: React.FC = () => {
   const [search, setSearch] = useState("");
-  const [activeTag, setActiveTag] = useState<WisataTag | null>(null);
+  // ✅ balik multi-select (biar ga "ilang" filter sebelumnya)
+  const [activeTags, setActiveTags] = useState<WisataTag[]>([]);
+
   const [rows, setRows] = useState<WisataCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -124,6 +134,10 @@ const WisataPage: React.FC = () => {
     if (!scrollRef.current) return;
     isDraggingRef.current = false;
     scrollRef.current.classList.remove("cursor-grabbing");
+  };
+
+  const toggleTag = (tag: WisataTag) => {
+    setActiveTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
   useEffect(() => {
@@ -187,11 +201,12 @@ const WisataPage: React.FC = () => {
         w.name.toLowerCase().includes(search.toLowerCase()) ||
         w.description.toLowerCase().includes(search.toLowerCase());
 
-      const matchTag = !activeTag || w.tags.includes(activeTag);
+      // ✅ multi tag: harus punya semua tag yang dipilih
+      const matchTag = activeTags.length === 0 || activeTags.every((t) => w.tags.includes(t));
 
       return matchSearch && matchTag;
     });
-  }, [rows, search, activeTag]);
+  }, [rows, search, activeTags]);
 
   return (
     <section id="wisata" className="bg-pageRadial">
@@ -201,9 +216,7 @@ const WisataPage: React.FC = () => {
           <h1 className="font-playfair text-3xl md:text-4xl font-bold text-[#001845]">
             Nature &amp; Tourism
           </h1>
-          <p className="mt-2 text-slate-600">
-            Explore the natural beauty of Purwokerto
-          </p>
+          <p className="mt-2 text-slate-600">Explore the natural beauty of Purwokerto</p>
 
           {/* SEARCH BAR */}
           <div className="mt-6 w-full rounded-full border border-slate-300 bg-white px-6 py-3 flex items-center gap-3 shadow-sm">
@@ -217,34 +230,34 @@ const WisataPage: React.FC = () => {
             />
           </div>
 
-          {/* FILTER TAGS */}
+          {/* FILTER TAGS (multi-select) */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {allTagFilters.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs md:text-sm border transition-colors ${
-                  activeTag === tag
-                    ? "bg-[#001845] text-white border-[#001845]"
-                    : "bg-white text-slate-700 border-slate-300 hover:border-[#001845]"
-                }`}
-              >
-                <span className="text-sm">{tagConfig[tag].icon}</span>
-                <span>{tagConfig[tag].label}</span>
-              </button>
-            ))}
+            {allTagFilters.map((tag) => {
+              const isActive = activeTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs md:text-sm border transition-colors ${
+                    isActive
+                      ? "bg-[#001845] text-white border-[#001845]"
+                      : "bg-white text-slate-700 border-slate-300 hover:border-[#001845]"
+                  }`}
+                >
+                  <span className="text-sm">{tagConfig[tag].icon}</span>
+                  <span>{tagConfig[tag].label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {loading && <p className="mt-8 text-slate-600">Loading wisata...</p>}
-
-          {err && !loading && (
-            <p className="mt-8 text-red-600">Gagal ambil data: {err}</p>
-          )}
+          {err && !loading && <p className="mt-8 text-red-600">Gagal ambil data: {err}</p>}
 
           {!loading && !err && (
             <div
               ref={scrollRef}
-              className="mt-10 grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6 overflow-x-auto pb-6 pr-6 cursor-grab select-none hide-scrollbar"
+              className="mt-10 grid grid-flow-col auto-cols-[260px] sm:auto-cols-[300px] lg:auto-cols-[320px] gap-6 overflow-x-auto pb-6 pr-6 cursor-grab select-none hide-scrollbar"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUpOrLeave}
@@ -257,20 +270,14 @@ const WisataPage: React.FC = () => {
                   className="block rounded-[32px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#001845]"
                 >
                   <article className="bg-white rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.16)] overflow-hidden flex flex-col h-full hover:-translate-y-1 hover:shadow-[0_25px_70px_rgba(15,23,42,0.20)] transition">
-                    <img
-                      src={w.imageUrl}
-                      alt={w.name}
-                      className="w-full h-64 object-cover"
-                    />
+                    <img src={w.imageUrl} alt={w.name} className="w-full h-64 object-cover" />
 
                     <div className="px-6 pt-5 pb-6 flex flex-1 flex-col">
                       <h2 className="font-playfair text-lg md:text-xl font-semibold text-[#001845]">
                         {w.name}
                       </h2>
 
-                      <p className="mt-2 text-sm text-slate-600 line-clamp-3">
-                        {w.description}
-                      </p>
+                      <p className="mt-2 text-sm text-slate-600 line-clamp-3">{w.description}</p>
 
                       <div className="mt-4 border-t border-slate-200 pt-3 space-y-2 text-xs md:text-sm text-slate-600">
                         <p>📍 {w.address}</p>
@@ -278,11 +285,13 @@ const WisataPage: React.FC = () => {
                         <p>💸 {w.priceRange}</p>
                       </div>
 
+                      {/* ICON BULAT BAWAH (tetap & rapih) */}
                       <div className="mt-4 flex gap-2 border-t border-slate-200 pt-3 mt-auto">
                         {w.tags.map((tag) => (
                           <div
                             key={tag}
                             className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs"
+                            title={tagConfig[tag].label}
                           >
                             {tagConfig[tag].icon}
                           </div>

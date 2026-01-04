@@ -31,6 +31,10 @@ import {
   parseHtmRangeFromInput, // ✅ baru
 } from "./adminUtils";
 
+const OPEN_24H = "00:00";
+const CLOSE_24H = "23:59";
+const TAG_24H = "24h";
+
 export default function AdminDashboardView() {
   const navigate = useNavigate();
 
@@ -56,6 +60,10 @@ export default function AdminDashboardView() {
     price: "0",
     openTime: "",
     closeTime: "",
+
+    // ✅ 24 jam
+    is24Hours: false,
+
     deskripsi: "",
     link_gmaps: "",
 
@@ -93,33 +101,50 @@ export default function AdminDashboardView() {
       const cafe = resCafe.ok ? ((await safeJson(resCafe)) as any[]) || [] : [];
       const kul = resKuliner.ok ? ((await safeJson(resKuliner)) as any[]) || [] : [];
 
-      const mapCommon = (i: any, category: CategoryUI): AdminPlace => ({
-        id: i.id,
-        name: i.nama_tempat,
-        category,
-        address: i.alamat,
-        imageUrl: i.link_foto,
+      const mapCommon = (i: any, category: CategoryUI): AdminPlace => {
+        const fasilitasArr = normalizeStringArray(i.fasilitas);
+        const jamBuka = i.jam_buka;
+        const jamTutup = i.jam_tutup;
 
-        // legacy
-        price: i.htm,
+        const is24 =
+          fasilitasArr.includes(TAG_24H) ||
+          (typeof jamBuka === "string" &&
+            typeof jamTutup === "string" &&
+            normalizeTimeToHHMM(jamBuka) === OPEN_24H &&
+            normalizeTimeToHHMM(jamTutup) === CLOSE_24H);
 
-        // ✅ range baru
-        price_min: typeof i.htm_min === "number" ? i.htm_min : undefined,
-        price_max: typeof i.htm_max === "number" ? i.htm_max : undefined,
+        return {
+          id: i.id,
+          name: i.nama_tempat,
+          category,
+          address: i.alamat,
+          imageUrl: i.link_foto,
 
-        openTime: i.jam_buka,
-        closeTime: i.jam_tutup,
-        fasilitas: normalizeStringArray(i.fasilitas),
-        deskripsi: i.deskripsi || "",
-        link_gmaps: i.link_gmaps || "",
-        cocok_untuk: normalizeStringArray(i.cocok_untuk),
-        menu_populer: normalizeStringArray(i.menu_populer),
-        trans_kode: i.trans_kode ?? null,
-        trans_jarak_meter: i.trans_jarak_meter ?? null,
-        trans_tarif_min: i.trans_tarif_min ?? null,
-        trans_tarif_max: i.trans_tarif_max ?? null,
-        trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
-      });
+          // legacy
+          price: i.htm,
+
+          // ✅ range baru
+          price_min: typeof i.htm_min === "number" ? i.htm_min : undefined,
+          price_max: typeof i.htm_max === "number" ? i.htm_max : undefined,
+
+          openTime: jamBuka,
+          closeTime: jamTutup,
+
+          // ✅ buat UI admin
+          is24Hours: is24,
+
+          fasilitas: fasilitasArr,
+          deskripsi: i.deskripsi || "",
+          link_gmaps: i.link_gmaps || "",
+          cocok_untuk: normalizeStringArray(i.cocok_untuk),
+          menu_populer: normalizeStringArray(i.menu_populer),
+          trans_kode: i.trans_kode ?? null,
+          trans_jarak_meter: i.trans_jarak_meter ?? null,
+          trans_tarif_min: i.trans_tarif_min ?? null,
+          trans_tarif_max: i.trans_tarif_max ?? null,
+          trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
+        };
+      };
 
       const merged: AdminPlace[] = [
         ...wa.map((i: any) => mapCommon(i, "Wisata Alam")),
@@ -161,15 +186,51 @@ export default function AdminDashboardView() {
     };
   }, [places, newsList]);
 
-  const handlePlaceChange = (field: keyof PlaceForm, value: string) => {
+  const handlePlaceChange = (field: keyof PlaceForm, value: any) => {
     setPlaceForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFasilitasToggle = (tag: string) => {
     setPlaceForm((prev) => {
       const cur = prev.fasilitas || [];
-      if (cur.includes(tag)) return { ...prev, fasilitas: cur.filter((t) => t !== tag) };
-      return { ...prev, fasilitas: [...cur, tag] };
+      const next = cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag];
+
+      // ✅ sinkron 24 jam ↔ fasilitas '24h'
+      if (tag === TAG_24H) {
+        const now24 = next.includes(TAG_24H);
+        if (now24) {
+          return { ...prev, fasilitas: next, is24Hours: true, openTime: OPEN_24H, closeTime: CLOSE_24H };
+        }
+        return { ...prev, fasilitas: next, is24Hours: false };
+      }
+
+      return { ...prev, fasilitas: next };
+    });
+  };
+
+  const handleToggle24Hours = (checked: boolean) => {
+    setPlaceForm((prev) => {
+      const cur = prev.fasilitas || [];
+      const has24 = cur.includes(TAG_24H);
+
+      if (checked) {
+        const fasilitasNext = has24 ? cur : [...cur, TAG_24H];
+        return {
+          ...prev,
+          is24Hours: true,
+          openTime: OPEN_24H,
+          closeTime: CLOSE_24H,
+          fasilitas: fasilitasNext,
+        };
+      }
+
+      // unchecked: hapus tag 24h supaya konsisten
+      const fasilitasNext = cur.filter((t) => t !== TAG_24H);
+      return {
+        ...prev,
+        is24Hours: false,
+        fasilitas: fasilitasNext,
+      };
     });
   };
 
@@ -184,6 +245,10 @@ export default function AdminDashboardView() {
       price: "0",
       openTime: "",
       closeTime: "",
+
+      // ✅ 24 jam
+      is24Hours: false,
+
       deskripsi: "",
       link_gmaps: "",
       fasilitas: [],
@@ -239,9 +304,20 @@ export default function AdminDashboardView() {
       // ✅ PRICE: ambil min/max/avg
       const { min, max, avg } = parseHtmRangeFromInput(placeForm.price);
 
+      // ✅ 24H logic: ikut checkbox ATAU tag fasilitas '24h'
+      const is24 = !!placeForm.is24Hours || (placeForm.fasilitas || []).includes(TAG_24H);
+
       // ✅ TIME: paksa HH:mm (24 jam)
-      const oTime = normalizeTimeToHHMM(placeForm.openTime) || "08:00";
-      const cTime = normalizeTimeToHHMM(placeForm.closeTime) || "22:00";
+      const oTime = is24 ? OPEN_24H : normalizeTimeToHHMM(placeForm.openTime) || "08:00";
+      const cTime = is24 ? CLOSE_24H : normalizeTimeToHHMM(placeForm.closeTime) || "22:00";
+
+      // ✅ pastikan fasilitas ada tag 24h jika 24 jam
+      const fasilitasArrRaw = placeForm.fasilitas || [];
+      const fasilitasArr = is24
+        ? fasilitasArrRaw.includes(TAG_24H)
+          ? fasilitasArrRaw
+          : [...fasilitasArrRaw, TAG_24H]
+        : fasilitasArrRaw.filter((t) => t !== TAG_24H);
 
       const transRuteArr = toArrFromComma(placeForm.trans_rute);
 
@@ -263,7 +339,7 @@ export default function AdminDashboardView() {
         link_foto: placeForm.imageUrl || "",
         deskripsi: placeForm.deskripsi || "-",
 
-        fasilitas: placeForm.fasilitas || [],
+        fasilitas: fasilitasArr,
         cocok_untuk: toArrFromComma(placeForm.cocok_untuk_text),
         menu_populer: toArrFromComma(placeForm.menu_populer_text),
 
@@ -313,19 +389,31 @@ export default function AdminDashboardView() {
         ? formatPriceInputID(`${p.price_min} - ${p.price_max}`)
         : formatPriceInputID(String(p.price ?? 0));
 
+    // ✅ detect 24 jam
+    const fasilitasArr = p.fasilitas || [];
+    const is24 =
+      !!p.is24Hours ||
+      fasilitasArr.includes(TAG_24H) ||
+      (normalizeTimeToHHMM(p.openTime || "") === OPEN_24H && normalizeTimeToHHMM(p.closeTime || "") === CLOSE_24H);
+
     setPlaceForm({
       name: p.name,
       category: p.category,
       address: p.address,
       imageUrl: p.imageUrl || "",
       price: priceText,
-      openTime: p.openTime || "",
-      closeTime: p.closeTime || "",
+
+      openTime: is24 ? OPEN_24H : p.openTime || "",
+      closeTime: is24 ? CLOSE_24H : p.closeTime || "",
+
+      is24Hours: is24,
 
       deskripsi: p.deskripsi || "",
       link_gmaps: p.link_gmaps || "",
 
-      fasilitas: p.fasilitas || [],
+      // kalau 24 jam, pastikan tag ada
+      fasilitas: is24 ? (fasilitasArr.includes(TAG_24H) ? fasilitasArr : [...fasilitasArr, TAG_24H]) : fasilitasArr,
+
       cocok_untuk_text: (p.cocok_untuk || []).join(", "),
       menu_populer_text: (p.menu_populer || []).join(", "),
 
@@ -387,7 +475,8 @@ export default function AdminDashboardView() {
       });
 
       const body = await safeJson(res);
-      if (!res.ok) throw new Error(typeof body === "string" ? body : (body as any)?.message || "Gagal memposting berita.");
+      if (!res.ok)
+        throw new Error(typeof body === "string" ? body : (body as any)?.message || "Gagal memposting berita.");
 
       setSuccessMsg("Berita berhasil diterbitkan!");
       setNewsForm({ title: "", category: "", date: "", image_url: "", content: "" });
@@ -592,6 +681,7 @@ export default function AdminDashboardView() {
                       className="w-full border rounded p-2 text-sm"
                       placeholder="HH:mm (contoh 08:00)"
                       value={placeForm.openTime}
+                      disabled={placeForm.is24Hours}
                       onKeyDown={(e) => {
                         const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
                         if (allowed.includes(e.key)) return;
@@ -611,6 +701,7 @@ export default function AdminDashboardView() {
                       className="w-full border rounded p-2 text-sm"
                       placeholder="HH:mm (contoh 22:00)"
                       value={placeForm.closeTime}
+                      disabled={placeForm.is24Hours}
                       onKeyDown={(e) => {
                         const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
                         if (allowed.includes(e.key)) return;
@@ -622,6 +713,26 @@ export default function AdminDashboardView() {
                       onBlur={() => setPlaceForm((p) => ({ ...p, closeTime: normalizeTimeToHHMM(p.closeTime) }))}
                     />
                   </div>
+                </div>
+
+                {/* ✅ Checkbox 24 jam */}
+                <div className="flex items-center gap-2">
+                  <input
+                    id="is24Hours"
+                    type="checkbox"
+                    checked={placeForm.is24Hours}
+                    onChange={(e) => handleToggle24Hours(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="is24Hours" className="text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                    Buka 24 Jam
+                  </label>
+
+                  {placeForm.is24Hours && (
+                    <span className="ml-auto text-[11px] text-slate-500">
+                      otomatis: {OPEN_24H} - {CLOSE_24H}
+                    </span>
+                  )}
                 </div>
 
                 {/* HARGA */}
