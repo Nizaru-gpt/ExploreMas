@@ -29,6 +29,9 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
+// ✅ FORGOT PASSWORD (NEW)
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+
 // ✅ Protected Routes
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
@@ -43,6 +46,9 @@ function App() {
         {/* AUTH USER */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* ✅ FORGOT PASSWORD */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* CAFE */}
         <Route path="/cafes" element={<CafePage />} />
@@ -69,7 +75,7 @@ function App() {
         />
 
         {/* (Opsional) contoh kalau nanti ada route user protected lain */}
-        {/* 
+        {/*
         <Route
           path="/profile"
           element={
@@ -77,7 +83,7 @@ function App() {
               <ProfilePage />
             </ProtectedRoute>
           }
-        /> 
+        />
         */}
       </Routes>
 

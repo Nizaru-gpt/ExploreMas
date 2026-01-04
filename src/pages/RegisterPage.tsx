@@ -8,7 +8,6 @@ type RegisterResponse = any;
 
 function extractApiMessage(err: any) {
   const msg = String(err?.message || err || "");
-  // kalau error message berisi JSON dari backend
   try {
     const parsed = JSON.parse(msg);
     if (parsed?.message) return String(parsed.message);
@@ -47,23 +46,28 @@ const RegisterPage: React.FC = () => {
     };
 
     try {
-      // ✅ route backend kamu yang bener: /register
       await api.post<RegisterResponse>("/register", payload);
+
+      // ✅ simpan email terakhir untuk auto-fill forgot password
+      localStorage.setItem("exploremas_last_email", email);
+
       navigate("/login");
     } catch (err: any) {
       const msg = extractApiMessage(err);
 
-      // ✅ fallback hanya kalau 404 (misal environment tertentu)
       if (msg.includes("HTTP 404")) {
         try {
           await api.post<RegisterResponse>("/api/register", payload);
+
+          // ✅ simpan juga di fallback sukses
+          localStorage.setItem("exploremas_last_email", email);
+
           navigate("/login");
           return;
         } catch (e2: any) {
           setApiError(extractApiMessage(e2));
         }
       } else {
-        // ✅ tampilkan error validasi 400 dari BE
         setApiError(msg);
       }
     } finally {
@@ -120,7 +124,6 @@ const RegisterPage: React.FC = () => {
               }}
             />
             {nameError && <p className="text-[11px] text-[#b91c1c]">Nama lengkap tidak boleh kosong.</p>}
-            {/* ✅ hint validasi backend */}
             <p className="text-[11px] text-slate-400">Username backend: 4–16 karakter.</p>
           </div>
 
@@ -164,7 +167,6 @@ const RegisterPage: React.FC = () => {
               }}
             />
             {passwordError && <p className="text-[11px] text-[#b91c1c]">Kata sandi tidak boleh kosong.</p>}
-            {/* ✅ hint validasi backend */}
             <p className="text-[11px] text-slate-400">Password backend: 8–16 karakter.</p>
           </div>
 

@@ -11,7 +11,6 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // UI tetap: label "Email", tapi input boleh username / email
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showErrors, setShowErrors] = useState(false);
@@ -38,10 +37,11 @@ const LoginPage: React.FC = () => {
         password,
       };
 
-      // ✅ USER LOGIN ONLY (tanpa admin_login)
+      // ✅ simpan value terakhir (kalau ini email beneran, nanti kepake buat auto-fill)
+      localStorage.setItem("exploremas_last_email", email);
+
       const data: LoginResponse = await api.post<LoginResponse>("/login", payload);
 
-      // ✅ kalau backend balikin string "Logged in" (text/plain), jangan diparse token
       if (typeof data === "string") {
         setSessionLoggedIn();
       } else {
@@ -54,7 +54,6 @@ const LoginPage: React.FC = () => {
         if (token) {
           setToken(String(token));
         } else {
-          // kalau BE cuma balikin response sederhana tanpa token
           setSessionLoggedIn();
         }
       }
@@ -73,7 +72,6 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-[#f5f4ff]">
       <div className="w-[min(420px,92%)] bg-white shadow-[0_18px_45px_rgba(12,27,76,0.14)] rounded-3xl p-8 border border-[#E3E6F5]">
-        {/* ===== MASKOT LOGIN ===== */}
         <div className="flex justify-center -mt-20 mb-2">
           <img
             src={loginMascot}
@@ -82,7 +80,6 @@ const LoginPage: React.FC = () => {
           />
         </div>
 
-        {/* ===== HEADER ===== */}
         <div className="mb-6 text-center">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-[#5E6282] uppercase">
             Welcome back
@@ -95,16 +92,13 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* ERROR BAR */}
         {apiError && (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
             {apiError}
           </div>
         )}
 
-        {/* ===== FORM ===== */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email (UI tetap) */}
           <div className="space-y-1">
             <label className="block text-xs font-medium text-[#181E4B]">
               Email
@@ -132,7 +126,6 @@ const LoginPage: React.FC = () => {
             )}
           </div>
 
-          {/* Password */}
           <div className="space-y-1">
             <label className="block text-xs font-medium text-[#181E4B]">
               Kata sandi
@@ -160,18 +153,20 @@ const LoginPage: React.FC = () => {
             )}
           </div>
 
-          {/* Remember */}
           <div className="flex items-center justify-between text-[11px] mt-1">
             <label className="inline-flex items-center gap-2 text-[#5E6282]">
               <input type="checkbox" className="rounded border-[#E3E6F5]" />
               <span>Ingat saya</span>
             </label>
-            <button type="button" className="text-[#0f1f56] hover:underline">
+            <button
+              type="button"
+              className="text-[#0f1f56] hover:underline"
+              onClick={() => navigate("/forgot-password")}
+            >
               Lupa kata sandi?
             </button>
           </div>
 
-          {/* Button */}
           <div className="mt-4 relative">
             <span
               aria-hidden
@@ -191,7 +186,6 @@ const LoginPage: React.FC = () => {
           </div>
         </form>
 
-        {/* Register link */}
         <p className="mt-6 text-center text-[11px] text-[#5E6282]">
           Belum punya akun?{" "}
           <a
