@@ -57,7 +57,6 @@ type TempatNongkrongApi = {
   link_foto: string;
   deskripsi?: string | null;
 
-  // optional kalau DB kamu udah ada
   fasilitas?: string[] | null;
   menu_populer?: string[] | null;
   cocok_untuk?: string[] | null;
@@ -102,8 +101,6 @@ type CafeUI = {
   priceRange: string;
   imageUrl: string;
   facilities: Facility[];
-
-  // ✅ biar detail bisa tau ini cafe/kuliner (nggak ngubah UI)
   _type: ListingMode;
 };
 
@@ -117,7 +114,7 @@ const formatPrice = (htm: number) => {
   }
 };
 
-// ====== infer fasilitas dari teks (tetap) ======
+// ====== infer fasilitas dari teks (fallback) ======
 const inferFacilities = (text: string): Facility[] => {
   const t = (text || "").toLowerCase();
   const facilities: Facility[] = [];
@@ -133,6 +130,24 @@ const inferFacilities = (text: string): Facility[] => {
 
   if (facilities.length === 0) facilities.push("wifi", "socket");
   return Array.from(new Set(facilities));
+};
+
+// ✅ normalize fasilitas dari API (kalau ada)
+const normalizeFacilitiesFromApi = (raw?: string[] | null, fallbackText?: string): Facility[] => {
+  const allowed = new Set<Facility>(allFacilityFilters);
+
+  if (Array.isArray(raw) && raw.length > 0) {
+    const mapped = raw
+      .map((x) => String(x).trim())
+      .filter(Boolean)
+      .map((x) => x as Facility)
+      .filter((x) => allowed.has(x));
+
+    if (mapped.length > 0) return Array.from(new Set(mapped));
+  }
+
+  // fallback kalau DB belum ada fasilitas
+  return inferFacilities(fallbackText || "");
 };
 
 const CafePage: React.FC = () => {
@@ -201,7 +216,8 @@ const CafePage: React.FC = () => {
               detailInfo: `${r.jam_buka ?? "-"} - ${r.jam_tutup ?? "-"}`,
               priceRange: formatPrice(r.htm),
               imageUrl: r.link_foto || "https://via.placeholder.com/640x400?text=No+Image",
-              facilities: inferFacilities(textForFacility),
+              // ✅ ambil dari API kalau ada, fallback ke infer
+              facilities: normalizeFacilitiesFromApi(r.fasilitas, textForFacility),
               _type: "cafe",
             };
           });
@@ -215,7 +231,6 @@ const CafePage: React.FC = () => {
             const desc = (r.deskripsi ?? "") || "";
             const textForFacility = `${name} ${desc} ${r.kategori ?? ""}`;
 
-            // kuliner kadang gak ada jam, jadi fallback
             const jb = r.jam_buka ?? "-";
             const jt = r.jam_tutup ?? "-";
 
@@ -227,7 +242,8 @@ const CafePage: React.FC = () => {
               detailInfo: `${jb} - ${jt}`,
               priceRange: formatPrice(r.htm),
               imageUrl: r.link_foto || "https://via.placeholder.com/640x400?text=No+Image",
-              facilities: inferFacilities(textForFacility),
+              // ✅ ambil dari API kalau ada, fallback ke infer
+              facilities: normalizeFacilitiesFromApi(r.fasilitas, textForFacility),
               _type: "kuliner",
             };
           });
@@ -281,7 +297,7 @@ const CafePage: React.FC = () => {
           />
         </div>
 
-        {/* ✅ FILTER MODE (baru, kecil, gak ngubah UI card) */}
+        {/* ✅ FILTER MODE */}
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={() => setMode("cafe")}
@@ -305,7 +321,7 @@ const CafePage: React.FC = () => {
           </button>
         </div>
 
-        {/* FILTER fasilitas (tetap) */}
+        {/* FILTER fasilitas */}
         <div className="mt-3 flex flex-wrap gap-2">
           {allFacilityFilters.map((f) => {
             const isActive = activeFilters.includes(f);
@@ -336,8 +352,6 @@ const CafePage: React.FC = () => {
         >
           {filteredCafes.map((cafe) => {
             const slug = slugify(cafe.name);
-
-            // ✅ kirim tipe via query param biar detail tau ini cafe/kuliner
             const to = `/cafes/${slug}?type=${cafe._type}`;
 
             return (

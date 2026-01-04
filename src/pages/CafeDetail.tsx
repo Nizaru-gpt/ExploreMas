@@ -36,17 +36,23 @@ type ApiItem = {
   trans_rute?: string[] | null;
 };
 
+const formatRp = (n: number) => {
+  try {
+    return n.toLocaleString("id-ID");
+  } catch {
+    return String(n);
+  }
+};
+
 const CafeDetail: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
 
-  // ✅ type dari query param, contoh: ?type=kuliner
   const typeParam = (searchParams.get("type") || "").toLowerCase();
   const forcedType: ListingMode | null =
     typeParam === "kuliner" ? "kuliner" : typeParam === "cafe" ? "cafe" : null;
 
-  // fallback detail lokal (tetap dipakai untuk field tambahan UI)
   const localCafe = useMemo(() => cafeDetails.find((c) => c.slug === slug), [slug]);
 
   const [apiItem, setApiItem] = useState<ApiItem | null>(null);
@@ -70,7 +76,6 @@ const CafeDetail: React.FC = () => {
         if (forcedType) {
           found = await fetchByType(forcedType);
         } else {
-          // coba cafe dulu, kalau tidak ada baru kuliner
           found = await fetchByType("cafe");
           if (!found) found = await fetchByType("kuliner");
         }
@@ -102,6 +107,50 @@ const CafeDetail: React.FC = () => {
 
     const mapsUrl = apiItem?.link_gmaps || localCafe?.mapsUrl || "";
 
+    // ✅ ambil array dari API dulu, fallback dummy
+    const fasilitasArr = (Array.isArray(apiItem?.fasilitas) ? apiItem!.fasilitas! : null) ?? localCafe?.facilities ?? [];
+    const menuArr = (Array.isArray(apiItem?.menu_populer) ? apiItem!.menu_populer! : null) ?? localCafe?.popularMenu ?? [];
+    const cocokArr = (Array.isArray(apiItem?.cocok_untuk) ? apiItem!.cocok_untuk! : null) ?? localCafe?.goodFor ?? [];
+
+    // ✅ featured (unggulan) dibentuk dari fasilitas API
+    const fasilitasText = (fasilitasArr || []).join(" ").toLowerCase();
+    const descText = String(apiItem?.deskripsi || localCafe?.description || "").toLowerCase();
+
+    const featured = {
+      ac: /ac|air\s?cond/.test(fasilitasText) || /ac|air\s?cond/.test(descText),
+      wifi: /wifi|wi-?fi/.test(fasilitasText) || /wifi|wi-?fi/.test(descText),
+      manySockets: /socket|colokan|stopkontak|charger/.test(fasilitasText) || /socket|colokan|stopkontak|charger/.test(descText),
+      instaSpot: /instagrammable|insta|spot\s?foto|aesthetic/.test(fasilitasText) || /instagrammable|insta|spot\s?foto|aesthetic/.test(descText),
+    };
+
+    // ✅ trans dari API dulu
+    const transKode = apiItem?.trans_kode ?? null;
+    const transJarak = apiItem?.trans_jarak_meter ?? null;
+    const transMin = apiItem?.trans_tarif_min ?? null;
+    const transMax = apiItem?.trans_tarif_max ?? null;
+    const transRute = Array.isArray(apiItem?.trans_rute) ? apiItem!.trans_rute! : null;
+
+    const transFromApiAvailable =
+      !!transKode || transJarak != null || transMin != null || transMax != null || (transRute && transRute.length > 0);
+
+    const trans = transFromApiAvailable
+      ? {
+          corridor: transKode || "-",
+          distance: transJarak != null ? `±${transJarak} meter` : "-",
+          mainStop: "-", // kalau kamu punya field halte utama, isi di BE/DB. Untuk sekarang biarin "-"
+          routes: transRute || [],
+          fareMin: transMin ?? 0,
+          fareMax: transMax ?? 0,
+        }
+      : (localCafe?.trans || {
+          corridor: "-",
+          distance: "-",
+          mainStop: "-",
+          routes: [],
+          fareMin: 0,
+          fareMax: 0,
+        });
+
     return {
       name: apiItem?.nama_tempat || localCafe?.name || "Tempat",
       address: apiItem?.alamat || localCafe?.address || "-",
@@ -109,33 +158,23 @@ const CafeDetail: React.FC = () => {
       image: apiItem?.link_foto || localCafe?.image || "",
       mapsUrl,
 
-      weekdayHours:
-        jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekdayHours || "-",
-      weekendHours:
-        jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekendHours || "-",
+      weekdayHours: jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekdayHours || "-",
+      weekendHours: jamBuka && jamTutup ? `${jamBuka} – ${jamTutup}` : localCafe?.weekendHours || "-",
+
+      // ✅ harga tampil range (kalau API nanti kamu ubah jadi string range, tinggal sesuaikan di sini)
       priceRange:
         typeof priceNumber === "number"
-          ? `Rp ${priceNumber.toLocaleString("id-ID")}`
+          ? priceNumber === 0
+            ? "Gratis"
+            : `Rp ${priceNumber.toLocaleString("id-ID")}`
           : localCafe?.priceRange || "-",
 
-      // UI tambahan tetap ambil dari local biar gak ngerusak desain
-      facilities: localCafe?.facilities || [],
-      popularMenu: localCafe?.popularMenu || [],
-      goodFor: localCafe?.goodFor || [],
-      featured: localCafe?.featured || {
-        ac: false,
-        wifi: false,
-        manySockets: false,
-        instaSpot: false,
-      },
-      trans: localCafe?.trans || {
-        corridor: "-",
-        distance: "-",
-        mainStop: "-",
-        routes: [],
-        fareMin: 0,
-        fareMax: 0,
-      },
+      // ✅ sekarang baca dari API
+      facilities: fasilitasArr || [],
+      popularMenu: menuArr || [],
+      goodFor: cocokArr || [],
+      featured,
+      trans,
     };
   }, [apiItem, localCafe, slug]);
 
@@ -221,7 +260,7 @@ const CafeDetail: React.FC = () => {
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-slate-900">Fasilitas Tempat</h3>
                 <div className="grid grid-cols-2 gap-2 text-[12px] md:grid-cols-3">
-                  {cafe.facilities.map((item) => (
+                  {(cafe.facilities || []).map((item) => (
                     <span
                       key={item}
                       className="inline-flex items-center justify-center rounded-full border border-indigo-100 bg-indigo-50/80 px-3 py-1 text-[11px] font-medium text-indigo-900"
@@ -229,13 +268,16 @@ const CafeDetail: React.FC = () => {
                       {item}
                     </span>
                   ))}
+                  {(!cafe.facilities || cafe.facilities.length === 0) && (
+                    <span className="text-xs text-slate-400">Belum ada fasilitas.</span>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-slate-900">Menu Populer</h3>
                 <div className="flex flex-wrap gap-2 text-[12px]">
-                  {cafe.popularMenu.map((item) => (
+                  {(cafe.popularMenu || []).map((item) => (
                     <span
                       key={item}
                       className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-50"
@@ -243,13 +285,16 @@ const CafeDetail: React.FC = () => {
                       {item}
                     </span>
                   ))}
+                  {(!cafe.popularMenu || cafe.popularMenu.length === 0) && (
+                    <span className="text-xs text-slate-400">Belum ada menu populer.</span>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-slate-900">Cocok Untuk</h3>
                 <div className="flex flex-wrap gap-2 text-[12px]">
-                  {cafe.goodFor.map((item) => (
+                  {(cafe.goodFor || []).map((item) => (
                     <span
                       key={item}
                       className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-700"
@@ -257,6 +302,9 @@ const CafeDetail: React.FC = () => {
                       {item}
                     </span>
                   ))}
+                  {(!cafe.goodFor || cafe.goodFor.length === 0) && (
+                    <span className="text-xs text-slate-400">Belum ada data cocok untuk.</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -277,6 +325,10 @@ const CafeDetail: React.FC = () => {
                       <span>{item.label}</span>
                     </button>
                   ))}
+
+                {featuredItems.filter((item) => cafe.featured[item.key]).length === 0 && (
+                  <p className="text-xs text-slate-400">Belum ada fasilitas unggulan.</p>
+                )}
               </div>
             </section>
 
@@ -294,9 +346,12 @@ const CafeDetail: React.FC = () => {
                 <p className="font-medium">{cafe.trans.mainStop}</p>
                 <p className="text-[13px] text-slate-500">Rute :</p>
                 <ul className="ml-4 list-disc space-y-1 text-[13px]">
-                  {cafe.trans.routes.map((rute) => (
+                  {(cafe.trans.routes || []).map((rute) => (
                     <li key={rute}>{rute}</li>
                   ))}
+                  {(!cafe.trans.routes || cafe.trans.routes.length === 0) && (
+                    <li className="text-slate-400">Belum ada rute.</li>
+                  )}
                 </ul>
               </div>
 
@@ -305,8 +360,7 @@ const CafeDetail: React.FC = () => {
               <div className="flex items-center justify-between text-sm text-slate-800">
                 <span>Tarif Trans :</span>
                 <span>
-                  Rp {cafe.trans.fareMin.toLocaleString("id-ID")} – Rp{" "}
-                  {cafe.trans.fareMax.toLocaleString("id-ID")}
+                  Rp {formatRp(cafe.trans.fareMin)} – Rp {formatRp(cafe.trans.fareMax)}
                 </span>
               </div>
             </section>
@@ -323,8 +377,8 @@ const CafeDetail: React.FC = () => {
                 Simpan ke Favorit
               </button>
 
-              {/* loading state tetap gak ganggu UI */}
-              {/* <p className="mt-3 text-[11px] text-slate-400">
+              {/* kalau mau debug:
+              <p className="mt-3 text-[11px] text-slate-400">
                 {loading ? "Loading..." : "Done"}
               </p> */}
             </section>

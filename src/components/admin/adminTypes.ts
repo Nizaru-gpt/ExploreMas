@@ -10,7 +10,14 @@ export type AdminPlace = {
   address: string;
 
   imageUrl?: string;
+
+  // legacy single number
   price?: number;
+
+  // ✅ range (baru)
+  price_min?: number;
+  price_max?: number;
+
   openTime?: string;
   closeTime?: string;
 
@@ -27,7 +34,6 @@ export type AdminPlace = {
   trans_tarif_min?: number | null;
   trans_tarif_max?: number | null;
 
-  // ✅ FIX: harus array/sequence (Vec<String>) kalau backend expect sequence
   trans_rute?: string[] | null;
 };
 
@@ -55,7 +61,6 @@ export type PlaceForm = {
   trans_tarif_min: string;
   trans_tarif_max: string;
 
-  // ✅ tetap string di UI (textarea), tapi nanti dikonversi jadi array saat submit
   trans_rute: string;
 };
 

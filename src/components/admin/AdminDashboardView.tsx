@@ -20,7 +20,16 @@ import ChatbotAdminPanel from "../chatbot/ChatbotAdminPanel";
 
 import type { AdminPlace, PlaceForm, NewsItem, NewsForm, CategoryUI, ResourceKey } from "./adminTypes";
 import { apiFetch, safeJson } from "./adminApi";
-import { TAG_LABELS, defaultTagsByCategory, categoryToResource, toArrFromComma, normalizeStringArray } from "./adminUtils";
+import {
+  TAG_LABELS,
+  defaultTagsByCategory,
+  categoryToResource,
+  toArrFromComma,
+  normalizeStringArray,
+  normalizeTimeToHHMM,
+  formatPriceInputID,
+  parseHtmRangeFromInput, // ✅ baru
+} from "./adminUtils";
 
 export default function AdminDashboardView() {
   const navigate = useNavigate();
@@ -84,87 +93,39 @@ export default function AdminDashboardView() {
       const cafe = resCafe.ok ? ((await safeJson(resCafe)) as any[]) || [] : [];
       const kul = resKuliner.ok ? ((await safeJson(resKuliner)) as any[]) || [] : [];
 
+      const mapCommon = (i: any, category: CategoryUI): AdminPlace => ({
+        id: i.id,
+        name: i.nama_tempat,
+        category,
+        address: i.alamat,
+        imageUrl: i.link_foto,
+
+        // legacy
+        price: i.htm,
+
+        // ✅ range baru
+        price_min: typeof i.htm_min === "number" ? i.htm_min : undefined,
+        price_max: typeof i.htm_max === "number" ? i.htm_max : undefined,
+
+        openTime: i.jam_buka,
+        closeTime: i.jam_tutup,
+        fasilitas: normalizeStringArray(i.fasilitas),
+        deskripsi: i.deskripsi || "",
+        link_gmaps: i.link_gmaps || "",
+        cocok_untuk: normalizeStringArray(i.cocok_untuk),
+        menu_populer: normalizeStringArray(i.menu_populer),
+        trans_kode: i.trans_kode ?? null,
+        trans_jarak_meter: i.trans_jarak_meter ?? null,
+        trans_tarif_min: i.trans_tarif_min ?? null,
+        trans_tarif_max: i.trans_tarif_max ?? null,
+        trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
+      });
+
       const merged: AdminPlace[] = [
-        ...wa.map((i: any) => ({
-          id: i.id,
-          name: i.nama_tempat,
-          category: "Wisata Alam" as const,
-          address: i.alamat,
-          imageUrl: i.link_foto,
-          price: i.htm,
-          openTime: i.jam_buka,
-          closeTime: i.jam_tutup,
-          fasilitas: normalizeStringArray(i.fasilitas),
-          deskripsi: i.deskripsi || "",
-          link_gmaps: i.link_gmaps || "",
-          cocok_untuk: normalizeStringArray(i.cocok_untuk),
-          menu_populer: normalizeStringArray(i.menu_populer),
-          trans_kode: i.trans_kode ?? null,
-          trans_jarak_meter: i.trans_jarak_meter ?? null,
-          trans_tarif_min: i.trans_tarif_min ?? null,
-          trans_tarif_max: i.trans_tarif_max ?? null,
-          trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
-        })),
-        ...wp.map((i: any) => ({
-          id: i.id,
-          name: i.nama_tempat,
-          category: "Wisata Pendidikan" as const,
-          address: i.alamat,
-          imageUrl: i.link_foto,
-          price: i.htm,
-          openTime: i.jam_buka,
-          closeTime: i.jam_tutup,
-          fasilitas: normalizeStringArray(i.fasilitas),
-          deskripsi: i.deskripsi || "",
-          link_gmaps: i.link_gmaps || "",
-          cocok_untuk: normalizeStringArray(i.cocok_untuk),
-          menu_populer: normalizeStringArray(i.menu_populer),
-          trans_kode: i.trans_kode ?? null,
-          trans_jarak_meter: i.trans_jarak_meter ?? null,
-          trans_tarif_min: i.trans_tarif_min ?? null,
-          trans_tarif_max: i.trans_tarif_max ?? null,
-          trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
-        })),
-        ...cafe.map((i: any) => ({
-          id: i.id,
-          name: i.nama_tempat,
-          category: "Cafe" as const,
-          address: i.alamat,
-          imageUrl: i.link_foto,
-          price: i.htm,
-          openTime: i.jam_buka,
-          closeTime: i.jam_tutup,
-          fasilitas: normalizeStringArray(i.fasilitas),
-          deskripsi: i.deskripsi || "",
-          link_gmaps: i.link_gmaps || "",
-          cocok_untuk: normalizeStringArray(i.cocok_untuk),
-          menu_populer: normalizeStringArray(i.menu_populer),
-          trans_kode: i.trans_kode ?? null,
-          trans_jarak_meter: i.trans_jarak_meter ?? null,
-          trans_tarif_min: i.trans_tarif_min ?? null,
-          trans_tarif_max: i.trans_tarif_max ?? null,
-          trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
-        })),
-        ...kul.map((i: any) => ({
-          id: i.id,
-          name: i.nama_tempat,
-          category: "Kuliner" as const,
-          address: i.alamat,
-          imageUrl: i.link_foto,
-          price: i.htm,
-          openTime: i.jam_buka,
-          closeTime: i.jam_tutup,
-          fasilitas: normalizeStringArray(i.fasilitas),
-          deskripsi: i.deskripsi || "",
-          link_gmaps: i.link_gmaps || "",
-          cocok_untuk: normalizeStringArray(i.cocok_untuk),
-          menu_populer: normalizeStringArray(i.menu_populer),
-          trans_kode: i.trans_kode ?? null,
-          trans_jarak_meter: i.trans_jarak_meter ?? null,
-          trans_tarif_min: i.trans_tarif_min ?? null,
-          trans_tarif_max: i.trans_tarif_max ?? null,
-          trans_rute: i.trans_rute ? normalizeStringArray(i.trans_rute) : null,
-        })),
+        ...wa.map((i: any) => mapCommon(i, "Wisata Alam")),
+        ...wp.map((i: any) => mapCommon(i, "Wisata Pendidikan")),
+        ...cafe.map((i: any) => mapCommon(i, "Cafe")),
+        ...kul.map((i: any) => mapCommon(i, "Kuliner")),
       ];
 
       setPlaces(merged);
@@ -275,11 +236,13 @@ export default function AdminDashboardView() {
       const resource = categoryToResource(placeForm.category as CategoryUI);
       const isEdit = isEditing && editKey?.id != null;
 
-      const htmVal = Number(placeForm.price || 0) || 0;
-      const oTime = placeForm.openTime || "08:00";
-      const cTime = placeForm.closeTime || "22:00";
+      // ✅ PRICE: ambil min/max/avg
+      const { min, max, avg } = parseHtmRangeFromInput(placeForm.price);
 
-      // ✅ FIX UTAMA: trans_rute harus array (sequence)
+      // ✅ TIME: paksa HH:mm (24 jam)
+      const oTime = normalizeTimeToHHMM(placeForm.openTime) || "08:00";
+      const cTime = normalizeTimeToHHMM(placeForm.closeTime) || "22:00";
+
       const transRuteArr = toArrFromComma(placeForm.trans_rute);
 
       const payload = {
@@ -288,7 +251,14 @@ export default function AdminDashboardView() {
         alamat: placeForm.address,
         jam_buka: oTime,
         jam_tutup: cTime,
-        htm: htmVal,
+
+        // ✅ kirim range
+        htm_min: min,
+        htm_max: max,
+
+        // ✅ tetap kirim avg untuk kompatibilitas
+        htm: avg,
+
         link_gmaps: placeForm.link_gmaps || "-",
         link_foto: placeForm.imageUrl || "",
         deskripsi: placeForm.deskripsi || "-",
@@ -301,8 +271,6 @@ export default function AdminDashboardView() {
         trans_jarak_meter: placeForm.trans_jarak_meter ? Number(placeForm.trans_jarak_meter) : null,
         trans_tarif_min: placeForm.trans_tarif_min ? Number(placeForm.trans_tarif_min) : null,
         trans_tarif_max: placeForm.trans_tarif_max ? Number(placeForm.trans_tarif_max) : null,
-
-        // ✅ kirim array (kalau kosong kirim [] biar aman di serde)
         trans_rute: transRuteArr,
       };
 
@@ -339,12 +307,18 @@ export default function AdminDashboardView() {
     setEditKey({ resource, id: p.id });
     setActiveTab("places");
 
+    // ✅ tampilkan range kalau ada, kalau tidak fallback ke single
+    const priceText =
+      typeof p.price_min === "number" && typeof p.price_max === "number"
+        ? formatPriceInputID(`${p.price_min} - ${p.price_max}`)
+        : formatPriceInputID(String(p.price ?? 0));
+
     setPlaceForm({
       name: p.name,
       category: p.category,
       address: p.address,
       imageUrl: p.imageUrl || "",
-      price: String(p.price ?? 0),
+      price: priceText,
       openTime: p.openTime || "",
       closeTime: p.closeTime || "",
 
@@ -360,7 +334,6 @@ export default function AdminDashboardView() {
       trans_tarif_min: p.trans_tarif_min != null ? String(p.trans_tarif_min) : "",
       trans_tarif_max: p.trans_tarif_max != null ? String(p.trans_tarif_max) : "",
 
-      // ✅ FIX: dari array -> string biar textarea tetap sama
       trans_rute: (p.trans_rute || []).join(", "),
     });
 
@@ -502,16 +475,12 @@ export default function AdminDashboardView() {
           </button>
         </div>
 
-        {error && (
-          <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100">{error}</div>
-        )}
+        {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100">{error}</div>}
         {successMsg && (
-          <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100">
-            {successMsg}
-          </div>
+          <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100">{successMsg}</div>
         )}
 
-        {/* ===================== TAB PLACES ===================== */}
+        {/* TAB PLACES */}
         {activeTab === "places" && (
           <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 items-start">
             {/* LIST */}
@@ -550,16 +519,10 @@ export default function AdminDashboardView() {
                           <span className="text-[10px] px-2 py-0.5 bg-slate-100 rounded-full">{p.category}</span>
                         </td>
                         <td className="p-2 text-right space-x-1">
-                          <button
-                            onClick={() => handleEditPlace(p)}
-                            className="p-1 text-blue-500 hover:bg-blue-50 rounded"
-                          >
+                          <button onClick={() => handleEditPlace(p)} className="p-1 text-blue-500 hover:bg-blue-50 rounded">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDeletePlace(p)}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                          >
+                          <button onClick={() => handleDeletePlace(p)} className="p-1 text-red-500 hover:bg-red-50 rounded">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
@@ -581,11 +544,7 @@ export default function AdminDashboardView() {
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sticky top-24">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  {isEditing ? (
-                    <Pencil className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <PlusCircle className="w-4 h-4 text-green-600" />
-                  )}
+                  {isEditing ? <Pencil className="w-4 h-4 text-blue-600" /> : <PlusCircle className="w-4 h-4 text-green-600" />}
                   {isEditing ? "Edit Tempat" : "Tambah Tempat"}
                 </h3>
 
@@ -599,11 +558,7 @@ export default function AdminDashboardView() {
               <form onSubmit={handlePlaceSubmit} className="space-y-3">
                 <div>
                   <label className="text-xs font-semibold">Nama Tempat</label>
-                  <input
-                    className="w-full border rounded p-2 text-sm"
-                    value={placeForm.name}
-                    onChange={(e) => handlePlaceChange("name", e.target.value)}
-                  />
+                  <input className="w-full border rounded p-2 text-sm" value={placeForm.name} onChange={(e) => handlePlaceChange("name", e.target.value)} />
                 </div>
 
                 <div>
@@ -624,41 +579,72 @@ export default function AdminDashboardView() {
 
                 <div>
                   <label className="text-xs font-semibold">Alamat</label>
-                  <input
-                    className="w-full border rounded p-2 text-sm"
-                    value={placeForm.address}
-                    onChange={(e) => handlePlaceChange("address", e.target.value)}
-                  />
+                  <input className="w-full border rounded p-2 text-sm" value={placeForm.address} onChange={(e) => handlePlaceChange("address", e.target.value)} />
                 </div>
 
+                {/* JAM */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs font-semibold">Jam Buka</label>
                     <input
-                      type="time"
+                      type="text"
+                      inputMode="text"
                       className="w-full border rounded p-2 text-sm"
+                      placeholder="HH:mm (contoh 08:00)"
                       value={placeForm.openTime}
+                      onKeyDown={(e) => {
+                        const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
+                        if (allowed.includes(e.key)) return;
+                        if (e.ctrlKey || e.metaKey) return;
+                        if (/[\d:.\s]/.test(e.key)) return;
+                        e.preventDefault();
+                      }}
                       onChange={(e) => handlePlaceChange("openTime", e.target.value)}
+                      onBlur={() => setPlaceForm((p) => ({ ...p, openTime: normalizeTimeToHHMM(p.openTime) }))}
                     />
                   </div>
                   <div>
                     <label className="text-xs font-semibold">Jam Tutup</label>
                     <input
-                      type="time"
+                      type="text"
+                      inputMode="text"
                       className="w-full border rounded p-2 text-sm"
+                      placeholder="HH:mm (contoh 22:00)"
                       value={placeForm.closeTime}
+                      onKeyDown={(e) => {
+                        const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
+                        if (allowed.includes(e.key)) return;
+                        if (e.ctrlKey || e.metaKey) return;
+                        if (/[\d:.\s]/.test(e.key)) return;
+                        e.preventDefault();
+                      }}
                       onChange={(e) => handlePlaceChange("closeTime", e.target.value)}
+                      onBlur={() => setPlaceForm((p) => ({ ...p, closeTime: normalizeTimeToHHMM(p.closeTime) }))}
                     />
                   </div>
                 </div>
 
+                {/* HARGA */}
                 <div>
                   <label className="text-xs font-semibold">HTM / Harga</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="text"
                     className="w-full border rounded p-2 text-sm"
                     value={placeForm.price}
-                    onChange={(e) => handlePlaceChange("price", e.target.value)}
+                    placeholder="contoh: 25.000 - 50.000"
+                    onKeyDown={(e) => {
+                      const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab"];
+                      if (allowed.includes(e.key)) return;
+                      if (e.ctrlKey || e.metaKey) return;
+                      if (/[\d.\-\s]/.test(e.key)) return;
+                      e.preventDefault();
+                    }}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[–—]/g, "-");
+                      handlePlaceChange("price", raw);
+                    }}
+                    onBlur={() => setPlaceForm((p) => ({ ...p, price: formatPriceInputID(p.price) }))}
                   />
                 </div>
 
@@ -736,14 +722,10 @@ export default function AdminDashboardView() {
                         >
                           <div
                             className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${
-                              (placeForm.fasilitas || []).includes(tag)
-                                ? "bg-white border-white"
-                                : "bg-white border-slate-300"
+                              (placeForm.fasilitas || []).includes(tag) ? "bg-white border-white" : "bg-white border-slate-300"
                             }`}
                           >
-                            {(placeForm.fasilitas || []).includes(tag) && (
-                              <div className="w-2 h-2 bg-slate-900 rounded-[1px]" />
-                            )}
+                            {(placeForm.fasilitas || []).includes(tag) && <div className="w-2 h-2 bg-slate-900 rounded-[1px]" />}
                           </div>
                           <span>{TAG_LABELS[tag] || tag}</span>
                         </div>
@@ -757,7 +739,7 @@ export default function AdminDashboardView() {
 
                 {/* Cocok untuk + Menu populer */}
                 <div className="pt-2 border-t border-dashed border-slate-200">
-                  <label className="text-xs font-semibold">Cocok Untuk (DB: cocok_untuk[])</label>
+                  <label className="text-xs font-semibold">Cocok Untuk</label>
                   <input
                     className="w-full border rounded p-2 text-sm"
                     value={placeForm.cocok_untuk_text}
@@ -780,7 +762,7 @@ export default function AdminDashboardView() {
 
                 {/* Trans Banyumas */}
                 <div className="pt-2 border-t border-dashed border-slate-200">
-                  <label className="text-xs font-semibold block mb-2">Trans Banyumas (opsional)</label>
+                  <label className="text-xs font-semibold block mb-2">Trans Banyumas</label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[11px] text-slate-500">Kode</label>
@@ -843,7 +825,7 @@ export default function AdminDashboardView() {
           </div>
         )}
 
-        {/* ===================== TAB NEWS ===================== */}
+        {/* TAB NEWS: tidak diubah */}
         {activeTab === "news" && (
           <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 items-start">
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
@@ -866,10 +848,7 @@ export default function AdminDashboardView() {
                         </td>
                         <td className="p-2 text-xs text-slate-500">{n.date}</td>
                         <td className="p-2 text-right">
-                          <button
-                            onClick={() => handleDeleteNews(n.id)}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                          >
+                          <button onClick={() => handleDeleteNews(n.id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
