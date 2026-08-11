@@ -1,73 +1,116 @@
-# React + TypeScript + Vite
+# ExploreMas Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application for **ExploreMas**, a tourism and local-discovery platform for exploring destinations, culinary places, local transportation information, news, and trip planning.
 
-Currently, two official plugins are available:
+The application also includes authentication, an administrative interface, and chatbot integration with the Rust backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Key Features
 
-## React Compiler
+### Public Experience
+- Tourism destination discovery
+- Educational-tourism information
+- Culinary and hangout-place discovery
+- Destination detail pages
+- Trans Banyumas information
+- News content
+- Trip planner
+- Chatbot interface
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### User Experience
+- Registration and login
+- Protected routes
+- Password-recovery flow
 
-## Expanding the ESLint configuration
+### Administration
+- Admin authentication
+- Dashboard
+- Destination/content management
+- News management
+- Chatbot/FAQ administration
+- Usage-related views
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Technology Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React
+- TypeScript
+- Vite
+- React Router
+- Recharts
+- SweetAlert2
+- Lucide React
+- Tailwind CSS
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Main Pages
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/pages/
+├── Home.tsx
+├── WisataPage.tsx
+├── WisataDetail.tsx
+├── CafePage.tsx
+├── CafeDetail.tsx
+├── TransBanyumas.tsx
+├── TripPlanner.tsx
+├── LoginPage.tsx
+├── RegisterPage.tsx
+├── ForgotPasswordPage.tsx
+├── AdminLoginPage.tsx
+└── AdminDashboard.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Backend
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+ExploreMas uses a Rust/Axum REST API backed by PostgreSQL.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Backend repository:
+
+https://github.com/Nizaru-gpt/exploremas_be
+
+## Getting Started
+
+```bash
+git clone https://github.com/Nizaru-gpt/ExploreMas.git
+cd ExploreMas
+npm install
+npm run dev
 ```
+
+## Build
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```text
+src/
+├── components/
+│   ├── admin/
+│   ├── auth/
+│   ├── chat/
+│   ├── chatbot/
+│   ├── home/
+│   ├── layout/
+│   ├── trans/
+│   └── trip/
+├── pages/
+├── services/
+└── main.tsx
+```
+
+## Project Focus
+
+ExploreMas demonstrates a split full-stack architecture where the React frontend consumes a Rust REST API, with shared request/response structures managed through TypeScript-side API abstractions.
+
+## Author
+
+Nizar Qulubi  
+GitHub: https://github.com/Nizaru-gpt  
+LinkedIn: https://www.linkedin.com/in/nizar-qulubi
